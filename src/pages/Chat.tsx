@@ -5,9 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 const Chat = () => {
   const [message, setMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [conversations] = useState([
     "Klant matching voor auto verzekering",
     "Voorwaarden vergelijken woonverzekering", 
@@ -16,26 +19,60 @@ const Chat = () => {
     "Pensioen verzekering matching",
     "Zorgverzekering optimalisatie"
   ]);
+  const { toast } = useToast();
 
-  const [currentChat] = useState([
-    {
-      type: "user",
-      content: "Ik heb een klant van 35 jaar met een Tesla Model 3. Hij wil een autoverzekering met uitgebreide dekking en no-claim bescherming. Wat zijn de beste opties?"
-    },
+  const [currentChat, setCurrentChat] = useState([
     {
       type: "assistant", 
-      content: "Ik kan je helpen met het vinden van de beste autoverzekering voor je klant. Op basis van de Tesla Model 3 en de gewenste uitgebreide dekking, zijn hier de top matches:\n\n1. **Allianz Direct All-Risk Plus** - Uitstekende dekking voor elektrische voertuigen met speciale accu garantie\n2. **ANWB Royaal Pakket** - Inclusief pechhulp en vervangend vervoer, ideaal voor Tesla\n3. **Nationale Nederlanden Premium** - Goede no-claim regeling en schadevrije jaren bescherming\n\nWil je dat ik de specifieke voorwaarden en prijzen voor deze opties opzoek?"
-    },
-    {
-      type: "user",
-      content: "Ja graag, en let vooral op de dekking voor de accu en laadpaal thuis"
+      content: "Hallo! Ik ben Simon A.I+, je persoonlijke verzekering matching assistent. Beschrijf de situatie van je klant en ik help je de beste verzekeringopties te vinden. Wat kan ik voor je doen?"
     }
   ]);
 
-  const handleSendMessage = () => {
-    if (message.trim()) {
-      // Here you would typically send the message to your AI service
-      setMessage("");
+  const handleSendMessage = async () => {
+    if (!message.trim() || isLoading) return;
+
+    const userMessage = message.trim();
+    setMessage("");
+    setIsLoading(true);
+
+    // Add user message to chat
+    const newUserMessage = { type: "user", content: userMessage };
+    setCurrentChat(prev => [...prev, newUserMessage]);
+
+    try {
+      // Prepare conversation history for API
+      const conversationHistory = currentChat.map(msg => ({
+        role: msg.type === "user" ? "user" : "assistant",
+        content: msg.content
+      }));
+
+      const { data, error } = await supabase.functions.invoke('simon-chat', {
+        body: {
+          message: userMessage,
+          conversationHistory: conversationHistory
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      // Add AI response to chat
+      const aiMessage = { type: "assistant", content: data.response };
+      setCurrentChat(prev => [...prev, aiMessage]);
+
+    } catch (error) {
+      console.error('Chat error:', error);
+      toast({
+        title: "Er is iets misgegaan",
+        description: "Probeer het opnieuw. Als het probleem aanhoudt, neem contact op met support.",
+        variant: "destructive",
+      });
+      
+      // Remove user message if API call failed
+      setCurrentChat(prev => prev.slice(0, -1));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -135,6 +172,16 @@ const Chat = () => {
                 )}
               </div>
             ))}
+            {isLoading && (
+              <div className="flex gap-3 justify-start">
+                <Avatar className="h-8 w-8 mt-1">
+                  <AvatarFallback className="bg-simon-green text-white text-xs">SA</AvatarFallback>
+                </Avatar>
+                <Card className="p-4 max-w-2xl bg-muted">
+                  <p className="text-sm text-muted-foreground">Simon denkt na...</p>
+                </Card>
+              </div>
+            )}
           </div>
         </ScrollArea>
 
@@ -146,14 +193,16 @@ const Chat = () => {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Beschrijf je klant situatie of stel een vraag over verzekeringen..."
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                disabled={isLoading}
                 className="pr-12"
               />
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={handleSendMessage}
-                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-simon-green hover:text-white"
+                disabled={isLoading || !message.trim()}
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-simon-green hover:text-white disabled:opacity-50"
               >
                 <Send className="h-4 w-4" />
               </Button>
