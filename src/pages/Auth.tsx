@@ -1,0 +1,141 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { BarChart3, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
+
+const Auth = () => {
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [company, setCompany] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // TODO: Implement authentication logic
+    console.log("Form submitted:", { email, password, name, company, isLogin });
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-simon-green-light via-background to-simon-blue-light flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Back to home */}
+        <Link 
+          to="/" 
+          className="inline-flex items-center gap-2 text-simon-green hover:text-simon-green-dark mb-6 transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Terug naar home
+        </Link>
+
+        <Card className="shadow-card-hover border-0">
+          <CardHeader className="text-center space-y-4">
+            <div className="mx-auto flex items-center gap-2">
+              <BarChart3 className="h-8 w-8 text-simon-green" />
+              <span className="text-2xl font-bold text-simon-blue">Simon</span>
+            </div>
+            <div>
+              <CardTitle className="text-2xl text-simon-blue">
+                {isLogin ? "Welkom terug" : "Account aanmaken"}
+              </CardTitle>
+              <CardDescription>
+                {isLogin 
+                  ? "Log in om door te gaan naar je dashboard" 
+                  : "Maak een account aan en start direct"}
+              </CardDescription>
+            </div>
+          </CardHeader>
+          
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {!isLogin && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Volledige naam</Label>
+                    <Input
+                      id="name"
+                      type="text"
+                      placeholder="Jan de Vries"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required={!isLogin}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="company">Bedrijfsnaam</Label>
+                    <Input
+                      id="company"
+                      type="text"
+                      placeholder="Verzekeringskantoor Jansen"
+                      value={company}
+                      onChange={(e) => setCompany(e.target.value)}
+                      required={!isLogin}
+                    />
+                  </div>
+                </>
+              )}
+              
+              <div className="space-y-2">
+                <Label htmlFor="email">E-mailadres</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="jan@verzekeringskantoor.nl"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="password">Wachtwoord</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              
+              <Button type="submit" variant="simon" className="w-full" size="lg">
+                {isLogin ? "Inloggen" : "Account aanmaken"}
+              </Button>
+            </form>
+            
+            <div className="mt-6 text-center">
+              <p className="text-sm text-muted-foreground">
+                {isLogin ? "Nog geen account?" : "Al een account?"}
+              </p>
+              <Button
+                variant="link"
+                onClick={() => setIsLogin(!isLogin)}
+                className="text-simon-green hover:text-simon-green-dark p-0 h-auto font-medium"
+              >
+                {isLogin ? "Registreer nu gratis" : "Log hier in"}
+              </Button>
+            </div>
+            
+            {!isLogin && (
+              <div className="mt-6 p-4 bg-simon-green-light rounded-lg">
+                <p className="text-sm text-simon-green font-medium mb-2">
+                  ✓ 14 dagen gratis proberen
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Geen creditcard vereist. Opzeggen wanneer je wilt.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default Auth;
