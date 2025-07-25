@@ -28,6 +28,16 @@ const Chat = () => {
     }
   ]);
 
+  const handleNewChat = () => {
+    setCurrentChat([
+      {
+        type: "assistant", 
+        content: "Hallo! Ik ben Simon A.I+, je persoonlijke verzekering matching assistent. Beschrijf de situatie van je klant en ik help je de beste verzekeringopties te vinden. Wat kan ik voor je doen?"
+      }
+    ]);
+    setMessage("");
+  };
+
   const handleSendMessage = async () => {
     if (!message.trim() || isLoading) return;
 
@@ -86,7 +96,7 @@ const Chat = () => {
             <MessageSquare className="h-6 w-6 text-simon-green" />
             <h1 className="text-xl font-bold">SIMON A.I</h1>
           </div>
-          <Button className="w-full" variant="simon">
+          <Button className="w-full" variant="simon" onClick={handleNewChat}>
             <Plus className="h-4 w-4 mr-2" />
             Nieuwe chat
           </Button>
