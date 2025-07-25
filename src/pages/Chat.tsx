@@ -11,34 +11,75 @@ import { useToast } from "@/components/ui/use-toast";
 const Chat = () => {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [conversations] = useState([
-    "Klant matching voor auto verzekering",
-    "Voorwaarden vergelijken woonverzekering", 
-    "Zakelijke verzekering advies",
-    "Rechtsbijstand polis analyse",
-    "Pensioen verzekering matching",
-    "Zorgverzekering optimalisatie"
-  ]);
+  const [activeConversationId, setActiveConversationId] = useState<string>("default");
   const { toast } = useToast();
 
-  const [currentChat, setCurrentChat] = useState([
-    {
-      type: "assistant", 
-      content: "Hallo! Ik ben Simon A.I+, je persoonlijke verzekering matching assistent. Beschrijf de situatie van je klant en ik help je de beste verzekeringopties te vinden. Wat kan ik voor je doen?"
+  // Store conversations with their chat history
+  const [conversations, setConversations] = useState<{[key: string]: {
+    id: string;
+    title: string;
+    messages: Array<{type: string; content: string}>;
+    lastUpdated: Date;
+  }}>({
+    default: {
+      id: "default",
+      title: "Nieuwe chat",
+      messages: [
+        {
+          type: "assistant", 
+          content: "Hallo! Ik ben Simon A.I+, je persoonlijke verzekering matching assistent. Beschrijf de situatie van je klant en ik help je de beste verzekeringopties te vinden. Wat kan ik voor je doen?"
+        }
+      ],
+      lastUpdated: new Date()
     }
-  ]);
+  });
+
+  // Get current chat messages
+  const currentChat = conversations[activeConversationId]?.messages || [];
+  const setCurrentChat = (messages: Array<{type: string; content: string}>) => {
+    setConversations(prev => ({
+      ...prev,
+      [activeConversationId]: {
+        ...prev[activeConversationId],
+        messages,
+        lastUpdated: new Date()
+      }
+    }));
+  };
+
+  const generateConversationTitle = (firstMessage: string) => {
+    // Generate a title from the first user message, max 40 characters
+    return firstMessage.length > 40 ? firstMessage.substring(0, 40) + "..." : firstMessage;
+  };
 
   const handleNewChat = () => {
-    setCurrentChat([
-      {
-        type: "assistant", 
-        content: "Hallo! Ik ben Simon A.I+, je persoonlijke verzekering matching assistent. Beschrijf de situatie van je klant en ik help je de beste verzekeringopties te vinden. Wat kan ik voor je doen?"
-      }
-    ]);
+    const newId = `chat_${Date.now()}`;
+    const newConversation = {
+      id: newId,
+      title: "Nieuwe chat",
+      messages: [
+        {
+          type: "assistant", 
+          content: "Hallo! Ik ben Simon A.I+, je persoonlijke verzekering matching assistent. Beschrijf de situatie van je klant en ik help je de beste verzekeringopties te vinden. Wat kan ik voor je doen?"
+        }
+      ],
+      lastUpdated: new Date()
+    };
+
+    setConversations(prev => ({
+      ...prev,
+      [newId]: newConversation
+    }));
+    setActiveConversationId(newId);
     setMessage("");
   };
 
-  const handleSendMessage = async () => {
+  const handleConversationClick = (conversationId: string) => {
+    setActiveConversationId(conversationId);
+    setMessage("");
+  };
+
+    const handleSendMessage = async () => {
     if (!message.trim() || isLoading) return;
 
     const userMessage = message.trim();
@@ -47,14 +88,29 @@ const Chat = () => {
 
     // Add user message to chat
     const newUserMessage = { type: "user", content: userMessage };
-    setCurrentChat(prev => [...prev, newUserMessage]);
+    const updatedMessages = [...currentChat, newUserMessage];
+    setCurrentChat(updatedMessages);
+
+    // Update conversation title if this is the first user message
+    const currentConv = conversations[activeConversationId];
+    if (currentConv && currentConv.title === "Nieuwe chat" && currentConv.messages.length === 1) {
+      setConversations(prev => ({
+        ...prev,
+        [activeConversationId]: {
+          ...prev[activeConversationId],
+          title: generateConversationTitle(userMessage)
+        }
+      }));
+    }
 
     try {
-      // Prepare conversation history for API
-      const conversationHistory = currentChat.map(msg => ({
-        role: msg.type === "user" ? "user" : "assistant",
-        content: msg.content
-      }));
+      // Prepare conversation history for API (exclude the welcome message for API)
+      const conversationHistory = updatedMessages
+        .filter(msg => !(msg.type === "assistant" && msg.content.includes("Hallo! Ik ben Simon A.I+")))
+        .map(msg => ({
+          role: msg.type === "user" ? "user" : "assistant",
+          content: msg.content
+        }));
 
       const { data, error } = await supabase.functions.invoke('simon-chat', {
         body: {
@@ -69,7 +125,7 @@ const Chat = () => {
 
       // Add AI response to chat
       const aiMessage = { type: "assistant", content: data.response };
-      setCurrentChat(prev => [...prev, aiMessage]);
+      setCurrentChat([...updatedMessages, aiMessage]);
 
     } catch (error) {
       console.error('Chat error:', error);
@@ -80,7 +136,7 @@ const Chat = () => {
       });
       
       // Remove user message if API call failed
-      setCurrentChat(prev => prev.slice(0, -1));
+      setCurrentChat(currentChat);
     } finally {
       setIsLoading(false);
     }
@@ -113,11 +169,19 @@ const Chat = () => {
           
           <ScrollArea className="h-full">
             <div className="space-y-2">
-              {conversations.map((conv, index) => (
-                <Card key={index} className="p-3 hover:bg-accent cursor-pointer transition-colors">
+              {Object.values(conversations)
+                .sort((a, b) => b.lastUpdated.getTime() - a.lastUpdated.getTime())
+                .map((conv) => (
+                <Card 
+                  key={conv.id} 
+                  className={`p-3 hover:bg-accent cursor-pointer transition-colors ${
+                    activeConversationId === conv.id ? 'bg-accent border-simon-green' : ''
+                  }`}
+                  onClick={() => handleConversationClick(conv.id)}
+                >
                   <div className="flex items-start gap-2">
                     <MessageSquare className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                    <p className="text-sm line-clamp-2">{conv}</p>
+                    <p className="text-sm line-clamp-2">{conv.title}</p>
                   </div>
                 </Card>
               ))}
@@ -157,7 +221,7 @@ const Chat = () => {
             </Avatar>
             <div>
               <h2 className="font-semibold">Simon A.I+</h2>
-              <p className="text-sm text-muted-foreground">Verzekering Matching Assistent</p>
+              <p className="text-sm text-muted-foreground">{conversations[activeConversationId]?.title || "Verzekering Matching Assistent"}</p>
             </div>
           </div>
         </div>
