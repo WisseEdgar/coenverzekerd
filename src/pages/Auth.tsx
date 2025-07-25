@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BarChart3, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -12,11 +14,68 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [company, setCompany] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement authentication logic
-    console.log("Form submitted:", { email, password, name, company, isLogin });
+    setLoading(true);
+
+    try {
+      if (isLogin) {
+        // Sign in existing user
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) throw error;
+
+        toast({
+          title: "Welkom terug!",
+          description: "Je bent succesvol ingelogd.",
+        });
+
+        // Redirect to dashboard
+        window.location.href = "/dashboard";
+      } else {
+        // Sign up new user
+        const redirectUrl = `${window.location.origin}/dashboard`;
+        
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: redirectUrl,
+            data: {
+              full_name: name,
+              company_name: company,
+            }
+          }
+        });
+
+        if (error) throw error;
+
+        toast({
+          title: "Account aangemaakt!",
+          description: "Controleer je e-mail om je account te verifiëren.",
+        });
+
+        // Clear form
+        setEmail("");
+        setPassword("");
+        setName("");
+        setCompany("");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Fout",
+        description: error.message || "Er is een fout opgetreden. Probeer het opnieuw.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -103,8 +162,8 @@ const Auth = () => {
                 />
               </div>
               
-              <Button type="submit" variant="simon" className="w-full" size="lg">
-                {isLogin ? "Inloggen" : "Account aanmaken"}
+              <Button type="submit" variant="simon" className="w-full" size="lg" disabled={loading}>
+                {loading ? "Bezig..." : (isLogin ? "Inloggen" : "Account aanmaken")}
               </Button>
             </form>
             
