@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Send, Settings, MessageSquare, Clock } from "lucide-react";
+import { Plus, Send, Settings, MessageSquare, Clock, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -77,6 +77,39 @@ const Chat = () => {
   const handleConversationClick = (conversationId: string) => {
     setActiveConversationId(conversationId);
     setMessage("");
+  };
+
+  const handleDeleteConversation = (conversationId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering the conversation click
+    
+    if (conversationId === "default") {
+      // Reset default conversation instead of deleting
+      setConversations(prev => ({
+        ...prev,
+        default: {
+          id: "default",
+          title: "Nieuwe chat",
+          messages: [
+            {
+              type: "assistant", 
+              content: "Hallo! Ik ben Simon A.I+, je persoonlijke verzekering matching assistent. Beschrijf de situatie van je klant en ik help je de beste verzekeringopties te vinden. Wat kan ik voor je doen?"
+            }
+          ],
+          lastUpdated: new Date()
+        }
+      }));
+    } else {
+      // Delete the conversation
+      setConversations(prev => {
+        const { [conversationId]: deleted, ...remaining } = prev;
+        return remaining;
+      });
+      
+      // If the deleted conversation was active, switch to default
+      if (activeConversationId === conversationId) {
+        setActiveConversationId("default");
+      }
+    }
   };
 
     const handleSendMessage = async () => {
@@ -174,14 +207,22 @@ const Chat = () => {
                 .map((conv) => (
                 <Card 
                   key={conv.id} 
-                  className={`p-3 hover:bg-accent cursor-pointer transition-colors ${
+                  className={`group p-3 hover:bg-accent cursor-pointer transition-colors relative ${
                     activeConversationId === conv.id ? 'bg-accent border-simon-green' : ''
                   }`}
                   onClick={() => handleConversationClick(conv.id)}
                 >
                   <div className="flex items-start gap-2">
                     <MessageSquare className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                    <p className="text-sm line-clamp-2">{conv.title}</p>
+                    <p className="text-sm line-clamp-2 flex-1">{conv.title}</p>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => handleDeleteConversation(conv.id, e)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground absolute right-2 top-2"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
                   </div>
                 </Card>
               ))}
