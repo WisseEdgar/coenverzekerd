@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, Link } from "react-router-dom";
 import { Users, Search, FileText, Settings, BarChart3, Home, MessageSquare, Folder } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
 const mainItems = [{
@@ -53,10 +53,10 @@ export function AppSidebar() {
       <SidebarContent className="bg-background border-r border-border">
         {/* Header */}
         <div className="p-4 border-b border-border">
-          <div className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <BarChart3 className="h-8 w-8 text-simon-green bg-slate-50" />
             {!isCollapsed && <span className="text-xl font-bold text-simon-blue">Simon</span>}
-          </div>
+          </Link>
         </div>
 
         {/* Main Navigation */}
