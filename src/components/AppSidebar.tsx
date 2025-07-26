@@ -54,8 +54,8 @@ export function AppSidebar() {
         {/* Header */}
         <div className="p-4 border-b border-border">
           <div className="flex items-center gap-2">
-            <BarChart3 className="h-6 w-6 text-simon-green" />
-            {!isCollapsed && <span className="text-lg font-bold text-simon-blue">Simon</span>}
+            <BarChart3 className="h-8 w-8 text-simon-green bg-slate-50" />
+            {!isCollapsed && <span className="text-xl font-bold text-simon-blue">Simon</span>}
           </div>
         </div>
 
