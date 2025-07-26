@@ -2,10 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowRight, Users, Zap, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
-
 export const HeroSection = () => {
-  return (
-    <section className="relative bg-gradient-to-br from-simon-green-light via-background to-simon-blue-light py-20 sm:py-32">
+  return <section className="relative bg-gradient-to-br from-simon-green-light via-background to-simon-blue-light py-20 sm:py-32">
       <div className="absolute inset-0 bg-gradient-hero opacity-5"></div>
       
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -86,9 +84,7 @@ export const HeroSection = () => {
               <Shield className="h-8 w-8 text-simon-green" />
             </div>
             <h3 className="text-lg font-semibold mb-2">100% Accuraat</h3>
-            <p className="text-muted-foreground">
-              AI getraind op alle actuele polisvoorwaarden
-            </p>
+            <p className="text-muted-foreground">AI getraind op alle actuele polisvoorwaarden</p>
           </div>
           
           <div className="text-center">
@@ -96,12 +92,9 @@ export const HeroSection = () => {
               <Users className="h-8 w-8 text-simon-green" />
             </div>
             <h3 className="text-lg font-semibold mb-2">Tevreden Klanten</h3>
-            <p className="text-muted-foreground">
-              Betere service, meer verkoop per adviseur
-            </p>
+            <p className="text-muted-foreground">Betere service volledig op maat</p>
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
