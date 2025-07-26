@@ -226,12 +226,6 @@ const Chat = () => {
             </div>
           </ScrollArea>
 
-          <div className="mt-4 pt-4 border-t border-border">
-            <div className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              Afgelopen 7 dagen
-            </div>
-          </div>
         </div>
 
         {/* Footer */}
