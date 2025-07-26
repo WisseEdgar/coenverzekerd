@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Send, Settings, MessageSquare, Clock, X } from "lucide-react";
+import { Plus, Send, Settings, MessageSquare, Clock, X, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -182,8 +182,8 @@ const Chat = () => {
         {/* Header */}
         <div className="p-4 border-b border-border">
           <div className="flex items-center gap-2 mb-4">
-            <MessageSquare className="h-6 w-6 text-simon-green" />
-            <h1 className="text-xl font-bold">SIMON A.I</h1>
+            <BarChart3 className="h-8 w-8 text-simon-green bg-slate-50" />
+            <h1 className="text-xl font-bold text-simon-blue">Simon</h1>
           </div>
           <Button className="w-full" variant="simon" onClick={handleNewChat}>
             <Plus className="h-4 w-4 mr-2" />
