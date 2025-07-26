@@ -2,16 +2,13 @@ import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Shield, Search, Brain, FileText, ArrowRight } from "lucide-react";
-
 const Features = () => {
-  const features = [
-    {
-      icon: Search,
-      title: "Intelligente Polis Matching",
-      description: "Voer simpelweg de klant eisen in en laat onze AI de beste polissen vinden.",
-      content: (
-        <Card className="bg-simon-green-light border-simon-green/20">
-          <CardContent className="p-6">
+  const features = [{
+    icon: Search,
+    title: "Intelligente Polis Matching",
+    description: "Voer simpelweg de klant eisen in en laat onze AI de beste polissen vinden.",
+    content: <Card className="bg-simon-green-light border-simon-green/20">
+          <CardContent className="p-6 bg-[#000a00]/0">
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
                 <div className="bg-simon-green text-white px-3 py-1 rounded text-sm">
@@ -32,21 +29,18 @@ const Features = () => {
             </div>
           </CardContent>
         </Card>
-      )
-    },
-    {
-      icon: Brain,
-      title: "Complexe Voorwaarden Begrijpen",
-      description: "Geen tijd om door ingewikkelde polisvoorwaarden te lezen? Laat AI het voor je uitleggen.",
-      content: (
-        <Card className="bg-simon-blue-light border-simon-blue/20">
+  }, {
+    icon: Brain,
+    title: "Complexe Voorwaarden Begrijpen",
+    description: "Geen tijd om door ingewikkelde polisvoorwaarden te lezen? Laat AI het voor je uitleggen.",
+    content: <Card className="bg-simon-blue-light border-simon-blue/20">
           <CardContent className="p-6">
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
                 <div className="bg-simon-blue text-white px-3 py-1 rounded text-sm">
                   Uitleggen
                 </div>
-                <Button variant="outline" size="sm">Engels</Button>
+                
               </div>
               <div className="text-sm text-muted-foreground">
                 "Deze polis dekt schade aan eigendommen van derden, maar uitsluitend wanneer deze schade het directe gevolg is van..."
@@ -58,14 +52,11 @@ const Features = () => {
             </div>
           </CardContent>
         </Card>
-      )
-    },
-    {
-      icon: FileText,
-      title: "Document Vergelijking",
-      description: "Vergelijk automatisch verschillende polissen en zie direct de verschillen in voorwaarden.",
-      content: (
-        <Card className="bg-gradient-card border-border">
+  }, {
+    icon: FileText,
+    title: "Document Vergelijking",
+    description: "Vergelijk automatisch verschillende polissen en zie direct de verschillen in voorwaarden.",
+    content: <Card className="bg-gradient-card border-border">
           <CardContent className="p-6">
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -88,14 +79,11 @@ const Features = () => {
             </div>
           </CardContent>
         </Card>
-      )
-    },
-    {
-      icon: Shield,
-      title: "Realtime Beschikbaarheid",
-      description: "Controleer direct of je klant in aanmerking komt en wat de actuele tarieven zijn.",
-      content: (
-        <Card className="bg-gradient-card border-border relative overflow-hidden">
+  }, {
+    icon: Shield,
+    title: "Realtime Beschikbaarheid",
+    description: "Controleer direct of je klant in aanmerking komt en wat de actuele tarieven zijn.",
+    content: <Card className="bg-gradient-card border-border relative overflow-hidden">
           <CardContent className="p-6">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -122,12 +110,8 @@ const Features = () => {
             </div>
           </CardContent>
         </Card>
-      )
-    }
-  ];
-
-  return (
-    <div className="min-h-screen bg-background">
+  }];
+  return <div className="min-h-screen bg-background">
       <Header />
       
       {/* Hero Section */}
@@ -146,8 +130,7 @@ const Features = () => {
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
         <div className="max-w-7xl mx-auto">
           <div className="grid gap-20">
-            {features.map((feature, index) => (
-              <div key={index} className={`flex flex-col ${index % 2 === 0 ? 'lg:flex-row' : 'lg:flex-row-reverse'} items-center gap-12`}>
+            {features.map((feature, index) => <div key={index} className={`flex flex-col ${index % 2 === 0 ? 'lg:flex-row' : 'lg:flex-row-reverse'} items-center gap-12`}>
                 {/* Content */}
                 <div className="lg:w-1/2 space-y-6">
                   <div className="flex items-center space-x-3">
@@ -171,8 +154,7 @@ const Features = () => {
                 <div className="lg:w-1/2">
                   {feature.content}
                 </div>
-              </div>
-            ))}
+              </div>)}
           </div>
         </div>
       </section>
@@ -196,8 +178,6 @@ const Features = () => {
           </div>
         </div>
       </section>
-    </div>
-  );
+    </div>;
 };
-
 export default Features;
