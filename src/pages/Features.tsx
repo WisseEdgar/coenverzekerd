@@ -170,7 +170,7 @@ const Features = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" className="bg-simon-green hover:bg-simon-green-dark">
-              Start Gratis Proef
+              Start vandaag nog
             </Button>
             <Button size="lg" variant="outline">
               Plan een Demo
