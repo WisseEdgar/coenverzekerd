@@ -195,9 +195,6 @@ const Chat = () => {
         <div className="flex-1 p-4">
           <div className="mb-4">
             <h2 className="text-sm font-medium text-muted-foreground mb-2">Je gesprekken</h2>
-            <Button variant="ghost" size="sm" className="text-simon-blue hover:text-simon-blue-light">
-              Wis alles
-            </Button>
           </div>
           
           <ScrollArea className="h-full">
