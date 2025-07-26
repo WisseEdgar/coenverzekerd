@@ -234,12 +234,6 @@ const Chat = () => {
             <Settings className="h-4 w-4 mr-2" />
             Instellingen
           </Button>
-          <div className="flex items-center gap-2 mt-3">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback>VB</AvatarFallback>
-            </Avatar>
-            <span className="text-sm font-medium">Verzekering Bot</span>
-          </div>
         </div>
       </div>
 
