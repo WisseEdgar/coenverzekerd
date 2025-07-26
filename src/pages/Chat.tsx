@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -181,10 +182,10 @@ const Chat = () => {
       <div className="w-80 bg-card border-r border-border flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-border">
-          <div className="flex items-center gap-2 mb-4">
+          <Link to="/" className="flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity">
             <BarChart3 className="h-8 w-8 text-simon-green bg-slate-50" />
             <h1 className="text-xl font-bold text-simon-blue">Simon</h1>
-          </div>
+          </Link>
           <Button className="w-full" variant="simon" onClick={handleNewChat}>
             <Plus className="h-4 w-4 mr-2" />
             Nieuwe chat
