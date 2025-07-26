@@ -1,85 +1,77 @@
 import { NavLink, useLocation } from "react-router-dom";
-import {
-  Users,
-  Search,
-  FileText,
-  Settings,
-  BarChart3,
-  Home,
-  MessageSquare,
-  Folder,
-} from "lucide-react";
-
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  useSidebar,
-} from "@/components/ui/sidebar";
-
-const mainItems = [
-  { title: "Dashboard", url: "/dashboard", icon: Home },
-  { title: "Klant Matching", url: "/dashboard/matching", icon: Search },
-  { title: "Klanten", url: "/dashboard/clients", icon: Users },
-  { title: "Resultaten", url: "/dashboard/results", icon: BarChart3 },
-];
-
-const toolsItems = [
-  { title: "Documenten", url: "/dashboard/documents", icon: FileText },
-  { title: "AI Chat", url: "/dashboard/chat", icon: MessageSquare },
-  { title: "Templates", url: "/dashboard/templates", icon: Folder },
-];
-
-const settingsItems = [
-  { title: "Instellingen", url: "/dashboard/settings", icon: Settings },
-];
-
+import { Users, Search, FileText, Settings, BarChart3, Home, MessageSquare, Folder } from "lucide-react";
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
+const mainItems = [{
+  title: "Dashboard",
+  url: "/dashboard",
+  icon: Home
+}, {
+  title: "Klant Matching",
+  url: "/dashboard/matching",
+  icon: Search
+}, {
+  title: "Klanten",
+  url: "/dashboard/clients",
+  icon: Users
+}, {
+  title: "Resultaten",
+  url: "/dashboard/results",
+  icon: BarChart3
+}];
+const toolsItems = [{
+  title: "Documenten",
+  url: "/dashboard/documents",
+  icon: FileText
+}, {
+  title: "AI Chat",
+  url: "/dashboard/chat",
+  icon: MessageSquare
+}, {
+  title: "Templates",
+  url: "/dashboard/templates",
+  icon: Folder
+}];
+const settingsItems = [{
+  title: "Instellingen",
+  url: "/dashboard/settings",
+  icon: Settings
+}];
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const {
+    state
+  } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
   const isCollapsed = state === "collapsed";
-
   const isActive = (path: string) => currentPath === path;
-
-  const getNavCls = ({ isActive }: { isActive: boolean }) =>
-    isActive 
-      ? "bg-simon-green text-white font-medium hover:bg-simon-green-dark" 
-      : "hover:bg-simon-green-light hover:text-simon-green";
-
-  return (
-    <Sidebar collapsible="icon">
+  const getNavCls = ({
+    isActive
+  }: {
+    isActive: boolean;
+  }) => isActive ? "bg-simon-green text-white font-medium hover:bg-simon-green-dark" : "hover:bg-simon-green-light hover:text-simon-green";
+  return <Sidebar collapsible="icon">
       <SidebarContent className="bg-background border-r border-border">
         {/* Header */}
         <div className="p-4 border-b border-border">
           <div className="flex items-center gap-2">
             <BarChart3 className="h-6 w-6 text-simon-green" />
-            {!isCollapsed && (
-              <span className="text-lg font-bold text-simon-blue">Simon</span>
-            )}
+            {!isCollapsed && <span className="text-lg font-bold text-simon-blue">Simon</span>}
           </div>
         </div>
 
         {/* Main Navigation */}
         <SidebarGroup>
-          <SidebarGroupLabel>Hoofdmenu</SidebarGroupLabel>
+          <SidebarGroupLabel className="bg-slate-50">Hoofdmenu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+              {mainItems.map(item => <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} className={getNavCls}>
                       <item.icon className="h-4 w-4" />
                       {!isCollapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+                </SidebarMenuItem>)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -89,16 +81,14 @@ export function AppSidebar() {
           <SidebarGroupLabel>Tools</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {toolsItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+              {toolsItems.map(item => <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} className={getNavCls}>
                       <item.icon className="h-4 w-4" />
                       {!isCollapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+                </SidebarMenuItem>)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -107,20 +97,17 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {settingsItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+              {settingsItems.map(item => <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} className={getNavCls}>
                       <item.icon className="h-4 w-4" />
                       {!isCollapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+                </SidebarMenuItem>)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-    </Sidebar>
-  );
+    </Sidebar>;
 }
