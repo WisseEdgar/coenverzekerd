@@ -1,6 +1,7 @@
 import { NavLink, useLocation, Link } from "react-router-dom";
 import { Users, Search, FileText, Settings, BarChart3, Home, MessageSquare, Folder } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
+import { AdminOnly } from "@/components/admin/AdminOnly";
 const mainItems = [{
   title: "Dashboard",
   url: "/dashboard",
@@ -32,12 +33,14 @@ const toolsItems = [{
   icon: Folder
 }];
 const settingsItems = [{
-  title: "Beheer",
-  url: "/dashboard/admin",
-  icon: Settings
-}, {
   title: "Instellingen",
   url: "/dashboard/settings",
+  icon: Settings
+}];
+
+const adminItems = [{
+  title: "Beheer",
+  url: "/dashboard/admin",
   icon: Settings
 }];
 export function AppSidebar() {
@@ -96,6 +99,25 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Admin Section (Only visible to admins) */}
+        <AdminOnly>
+          <SidebarGroup>
+            <SidebarGroupLabel>Beheer</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {adminItems.map(item => <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink to={item.url} className={getNavCls}>
+                        <item.icon className="h-4 w-4" />
+                        {!isCollapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>)}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </AdminOnly>
 
         {/* Settings */}
         <SidebarGroup>

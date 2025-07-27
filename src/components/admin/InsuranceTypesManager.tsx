@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAdmin } from '@/hooks/useAdmin';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -36,6 +37,7 @@ export const InsuranceTypesManager = () => {
   const [editingType, setEditingType] = useState<InsuranceType | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
+  const { logAdminAction } = useAdmin();
 
   const form = useForm<InsuranceTypeForm>({
     resolver: zodResolver(insuranceTypeSchema),
@@ -84,6 +86,7 @@ export const InsuranceTypesManager = () => {
     try {
       if (editingType) {
         // Update existing type
+        const oldValues = { name: editingType.name, description: editingType.description };
         const { error } = await supabase
           .from('insurance_types')
           .update({
@@ -94,20 +97,40 @@ export const InsuranceTypesManager = () => {
 
         if (error) throw error;
 
+        // Log admin action
+        await logAdminAction(
+          'UPDATE insurance_type',
+          'insurance_types',
+          editingType.id,
+          oldValues,
+          { name: data.name, description: data.description }
+        );
+
         toast({
           title: 'Bijgewerkt',
           description: 'Verzekeringstype is bijgewerkt',
         });
       } else {
         // Create new type
-        const { error } = await supabase
+        const { data: newType, error } = await supabase
           .from('insurance_types')
           .insert({
             name: data.name,
             description: data.description || null,
-          });
+          })
+          .select()
+          .single();
 
         if (error) throw error;
+
+        // Log admin action
+        await logAdminAction(
+          'CREATE insurance_type',
+          'insurance_types',
+          newType?.id,
+          null,
+          { name: data.name, description: data.description }
+        );
 
         toast({
           title: 'Toegevoegd',
@@ -146,6 +169,15 @@ export const InsuranceTypesManager = () => {
         .eq('id', type.id);
 
       if (error) throw error;
+
+      // Log admin action
+      await logAdminAction(
+        'DELETE insurance_type',
+        'insurance_types',
+        type.id,
+        { name: type.name, description: type.description },
+        null
+      );
 
       toast({
         title: 'Verwijderd',
