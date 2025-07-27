@@ -211,23 +211,23 @@ export const DocumentReassignmentManager = () => {
                 onChange={(e) => setFilter(prev => ({ ...prev, search: e.target.value }))}
               />
             </div>
-            <Select value={filter.type} onValueChange={(value) => setFilter(prev => ({ ...prev, type: value }))}>
+            <Select value={filter.type || 'none'} onValueChange={(value) => setFilter(prev => ({ ...prev, type: value === 'none' ? '' : value }))}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Filter op type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Alle types</SelectItem>
+                <SelectItem value="none">Alle types</SelectItem>
                 {insuranceTypes.map(type => (
                   <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Select value={filter.company} onValueChange={(value) => setFilter(prev => ({ ...prev, company: value }))}>
+            <Select value={filter.company || 'none'} onValueChange={(value) => setFilter(prev => ({ ...prev, company: value === 'none' ? '' : value }))}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Filter op maatschappij" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Alle maatschappijen</SelectItem>
+                <SelectItem value="none">Alle maatschappijen</SelectItem>
                 {insuranceCompanies.map(company => (
                   <SelectItem key={company.id} value={company.id}>{company.name}</SelectItem>
                 ))}
@@ -254,7 +254,10 @@ export const DocumentReassignmentManager = () => {
                   <div className="flex gap-2">
                     <Select onValueChange={(value) => {
                       const [typeId, companyId] = value.split('|');
-                      handleBulkReassign(typeId || null, companyId || null);
+                      handleBulkReassign(
+                        typeId === 'none' ? null : typeId, 
+                        companyId === 'none' ? null : companyId
+                      );
                     }}>
                       <SelectTrigger className="w-[250px]">
                         <SelectValue placeholder="Kies nieuwe categorisering" />
@@ -267,7 +270,7 @@ export const DocumentReassignmentManager = () => {
                             </SelectItem>
                           ))
                         )}
-                        <SelectItem value="|">Geen categorisering</SelectItem>
+                        <SelectItem value="none|none">Geen categorisering</SelectItem>
                       </SelectContent>
                     </Select>
                     <Button
@@ -337,11 +340,11 @@ export const DocumentReassignmentManager = () => {
                     </TableCell>
                     <TableCell>
                       <Select
-                        value={document.insurance_type_id || ''}
+                        value={document.insurance_type_id || 'none'}
                         onValueChange={(value) => {
                           handleSingleReassign(
                             document.id,
-                            value || null,
+                            value === 'none' ? null : value,
                             document.insurance_company_id
                           );
                         }}
@@ -350,7 +353,7 @@ export const DocumentReassignmentManager = () => {
                           <SelectValue placeholder="Selecteer type" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Geen type</SelectItem>
+                          <SelectItem value="none">Geen type</SelectItem>
                           {insuranceTypes.map(type => (
                             <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
                           ))}
@@ -359,12 +362,12 @@ export const DocumentReassignmentManager = () => {
                     </TableCell>
                     <TableCell>
                       <Select
-                        value={document.insurance_company_id || ''}
+                        value={document.insurance_company_id || 'none'}
                         onValueChange={(value) => {
                           handleSingleReassign(
                             document.id,
                             document.insurance_type_id,
-                            value || null
+                            value === 'none' ? null : value
                           );
                         }}
                       >
@@ -372,7 +375,7 @@ export const DocumentReassignmentManager = () => {
                           <SelectValue placeholder="Selecteer maatschappij" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Geen maatschappij</SelectItem>
+                          <SelectItem value="none">Geen maatschappij</SelectItem>
                           {insuranceCompanies.map(company => (
                             <SelectItem key={company.id} value={company.id}>{company.name}</SelectItem>
                           ))}
