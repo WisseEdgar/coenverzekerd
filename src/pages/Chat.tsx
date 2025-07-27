@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Send, Settings, MessageSquare, X, BarChart3 } from "lucide-react";
+import { Plus, Send, Settings, MessageSquare, X, BarChart3, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -7,12 +7,27 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import ClientSelector from "@/components/chat/ClientSelector";
+import IntakeQuestionnaire from "@/components/chat/IntakeQuestionnaire";
+import SaveClientDialog from "@/components/chat/SaveClientDialog";
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  created_at: string;
+}
+
+interface ClientProfile {
+  id: string;
+  client_type: 'private' | 'business';
+  full_name?: string;
+  company_name?: string;
+  email?: string;
+  phone?: string;
+  advisor_notes?: string;
+  intake_responses?: any;
   created_at: string;
 }
 
@@ -30,6 +45,10 @@ const Chat = () => {
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [user, setUser] = useState<any>(null);
+  const [selectedClient, setSelectedClient] = useState<ClientProfile | null>(null);
+  const [showIntake, setShowIntake] = useState(false);
+  const [intakeData, setIntakeData] = useState<any>(null);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
   const { toast } = useToast();
 
   // Check auth and load conversations on mount
@@ -104,7 +123,18 @@ const Chat = () => {
   };
 
   const addWelcomeMessage = async (conversationId: string) => {
-    const welcomeContent = "Hallo! Ik ben Simon A.I+, je persoonlijke verzekering matching assistent. Beschrijf de situatie van je klant en ik help je de beste verzekeringopties te vinden. Wat kan ik voor je doen?";
+    let welcomeContent = "Hallo! Ik ben Simon A.I+, je persoonlijke verzekering matching assistent.";
+    
+    if (selectedClient) {
+      const clientName = selectedClient.client_type === 'private' 
+        ? selectedClient.full_name 
+        : selectedClient.company_name;
+      welcomeContent += ` Ik zie dat we spreken over ${clientName}. Ik heb toegang tot hun profiel en kan gepersonaliseerd advies geven.`;
+    } else {
+      welcomeContent += " Beschrijf de situatie van je klant en ik help je de beste verzekeringopties te vinden.";
+    }
+    
+    welcomeContent += " Wat kan ik voor je doen?";
     
     try {
       const { data, error } = await supabase
@@ -133,6 +163,11 @@ const Chat = () => {
 
   const handleNewChat = async () => {
     try {
+      // Reset client selection and intake data
+      setSelectedClient(null);
+      setIntakeData(null);
+      setShowIntake(false);
+      
       const { data, error } = await supabase
         .from('conversations')
         .insert({
@@ -157,6 +192,42 @@ const Chat = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleClientSelect = (client: ClientProfile | null) => {
+    setSelectedClient(client);
+    setShowIntake(false);
+    setIntakeData(null);
+  };
+
+  const handleStartChat = () => {
+    if (!selectedClient && !intakeData) {
+      setShowIntake(true);
+    } else {
+      setShowIntake(false);
+    }
+  };
+
+  const handleIntakeComplete = (data: any) => {
+    setIntakeData(data);
+    setShowIntake(false);
+  };
+
+  const handleIntakeSkip = () => {
+    setShowIntake(false);
+  };
+
+  const handleSaveAsClient = async (data: any) => {
+    setIntakeData(data);
+    setShowSaveDialog(true);
+  };
+
+  const handleClientSaved = (clientId: string) => {
+    // Optionally load the saved client
+    toast({
+      title: "Klant opgeslagen",
+      description: "Het klantprofiel is succesvol aangemaakt"
+    });
   };
 
   const handleConversationClick = async (conversation: Conversation) => {
@@ -247,11 +318,13 @@ const Chat = () => {
           content: msg.content
         }));
 
-      // Call Simon AI
+      // Call Simon AI with client context
       const { data: aiData, error: aiError } = await supabase.functions.invoke('simon-chat', {
         body: {
           message: userMessage,
-          conversationHistory: conversationHistory
+          conversationHistory: conversationHistory,
+          clientProfile: selectedClient,
+          intakeData: intakeData
         }
       });
 
@@ -366,66 +439,124 @@ const Chat = () => {
           </div>
         </div>
 
-        {/* Messages */}
-        <ScrollArea className="flex-1 p-4">
-          <div className="space-y-6 max-w-4xl">
-            {messages.map((msg) => (
-              <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                {msg.role === 'assistant' && (
-                  <Avatar className="h-8 w-8 mt-1">
-                    <AvatarFallback className="bg-simon-green text-white text-xs">SA</AvatarFallback>
-                  </Avatar>
-                )}
-                <Card className={`p-4 max-w-2xl ${msg.role === 'user' ? 'bg-simon-green text-white' : 'bg-muted'}`}>
-                  <p className="text-sm whitespace-pre-line">{msg.content}</p>
-                </Card>
-                {msg.role === 'user' && (
-                  <Avatar className="h-8 w-8 mt-1">
-                    <AvatarFallback>VB</AvatarFallback>
-                  </Avatar>
-                )}
-              </div>
-            ))}
-            {isLoading && (
-              <div className="flex gap-3 justify-start">
-                <Avatar className="h-8 w-8 mt-1">
-                  <AvatarFallback className="bg-simon-green text-white text-xs">SA</AvatarFallback>
-                </Avatar>
-                <Card className="p-4 max-w-2xl bg-muted">
-                  <p className="text-sm text-muted-foreground">Simon denkt na...</p>
-                </Card>
-              </div>
-            )}
+        {/* Client Selection and Intake */}
+        {showIntake ? (
+          <div className="flex-1 flex items-center justify-center p-4">
+            <IntakeQuestionnaire
+              onComplete={handleIntakeComplete}
+              onSkip={handleIntakeSkip}
+              onSaveAsClient={handleSaveAsClient}
+            />
           </div>
-        </ScrollArea>
-
-        {/* Input Area */}
-        <div className="p-4 border-t border-border bg-card">
-          <div className="flex gap-2 max-w-4xl">
-            <div className="flex-1 relative">
-              <Input
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Beschrijf je klant situatie of stel een vraag over verzekeringen..."
-                onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
-                disabled={isLoading}
-                className="pr-12"
+        ) : (
+          <>
+            {/* Client Selector */}
+            <div className="p-4 border-b border-border bg-card">
+              <ClientSelector
+                selectedClient={selectedClient}
+                onClientSelect={handleClientSelect}
               />
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleSendMessage}
-                disabled={isLoading || !message.trim()}
-                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-simon-green hover:text-white disabled:opacity-50"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
+              {!selectedClient && !intakeData && messages.length === 0 && (
+                <Button
+                  onClick={handleStartChat}
+                  variant="outline"
+                  className="w-full mt-2"
+                >
+                  Start Gesprek (met intake)
+                </Button>
+              )}
+              {!selectedClient && !intakeData && messages.length > 0 && (
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    onClick={() => setShowSaveDialog(true)}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                  >
+                    <Save className="mr-2 h-4 w-4" />
+                    Opslaan als Klant
+                  </Button>
+                </div>
+              )}
             </div>
+
+            {/* Messages */}
+            <ScrollArea className="flex-1 p-4">
+              <div className="space-y-6 max-w-4xl">
+                {messages.map((msg) => (
+                  <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    {msg.role === 'assistant' && (
+                      <Avatar className="h-8 w-8 mt-1">
+                        <AvatarFallback className="bg-simon-green text-white text-xs">SA</AvatarFallback>
+                      </Avatar>
+                    )}
+                    <Card className={`p-4 max-w-2xl ${msg.role === 'user' ? 'bg-simon-green text-white' : 'bg-muted'}`}>
+                      <p className="text-sm whitespace-pre-line">{msg.content}</p>
+                    </Card>
+                    {msg.role === 'user' && (
+                      <Avatar className="h-8 w-8 mt-1">
+                        <AvatarFallback>VB</AvatarFallback>
+                      </Avatar>
+                    )}
+                  </div>
+                ))}
+                {isLoading && (
+                  <div className="flex gap-3 justify-start">
+                    <Avatar className="h-8 w-8 mt-1">
+                      <AvatarFallback className="bg-simon-green text-white text-xs">SA</AvatarFallback>
+                    </Avatar>
+                    <Card className="p-4 max-w-2xl bg-muted">
+                      <p className="text-sm text-muted-foreground">Simon denkt na...</p>
+                    </Card>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </>
+        )}
+
+        {/* Save Client Dialog */}
+        <SaveClientDialog
+          isOpen={showSaveDialog}
+          onClose={() => setShowSaveDialog(false)}
+          onSaved={handleClientSaved}
+          initialData={intakeData}
+          conversationSummary={messages
+            .filter(msg => msg.role === 'user' || msg.role === 'assistant')
+            .map(msg => `${msg.role === 'user' ? 'Klant' : 'Simon'}: ${msg.content}`)
+            .join('\n\n')
+          }
+        />
+
+        {/* Input Area - Hidden during intake */}
+        {!showIntake && (
+          <div className="p-4 border-t border-border bg-card">
+            <div className="flex gap-2 max-w-4xl">
+              <div className="flex-1 relative">
+                <Input
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Beschrijf je klant situatie of stel een vraag over verzekeringen..."
+                  onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                  disabled={isLoading}
+                  className="pr-12"
+                />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleSendMessage}
+                  disabled={isLoading || !message.trim()}
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-simon-green hover:text-white disabled:opacity-50"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2 max-w-4xl">
+              Simon kan fouten maken. Controleer belangrijke informatie altijd bij de verzekeraar.
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground mt-2 max-w-4xl">
-            Simon kan fouten maken. Controleer belangrijke informatie altijd bij de verzekeraar.
-          </p>
-        </div>
+        )}
       </div>
     </div>
   );

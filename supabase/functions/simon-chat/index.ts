@@ -21,7 +21,7 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { message, conversationHistory } = await req.json();
+    const { message, conversationHistory, clientProfile, intakeData } = await req.json();
 
     // Generate embedding for the user's message to find relevant documents
     console.log('Generating embedding for semantic search...');
@@ -60,6 +60,39 @@ serve(async (req) => {
       ).join('\n\n');
     }
 
+    // Build context from client profile and intake data
+    let clientContext = "";
+    if (clientProfile) {
+      clientContext += `\n\nCLIENT PROFIEL:\n`;
+      clientContext += `Type: ${clientProfile.client_type === 'private' ? 'Particuliere klant' : 'Zakelijke klant'}\n`;
+      if (clientProfile.full_name) clientContext += `Naam: ${clientProfile.full_name}\n`;
+      if (clientProfile.company_name) clientContext += `Bedrijf: ${clientProfile.company_name}\n`;
+      if (clientProfile.email) clientContext += `Email: ${clientProfile.email}\n`;
+      if (clientProfile.phone) clientContext += `Telefoon: ${clientProfile.phone}\n`;
+      if (clientProfile.advisor_notes) clientContext += `Adviseur notities: ${clientProfile.advisor_notes}\n`;
+    }
+
+    if (intakeData) {
+      clientContext += `\n\nINTAKE INFORMATIE:\n`;
+      Object.entries(intakeData).forEach(([key, value]) => {
+        if (value) {
+          const labels: any = {
+            client_type: 'Klanttype',
+            full_name: 'Naam',
+            company_name: 'Bedrijfsnaam',
+            email: 'Email',
+            phone: 'Telefoon',
+            situation_description: 'Situatie',
+            insurance_needs: 'Verzekering behoeften',
+            current_coverage: 'Huidige verzekeringen',
+            budget: 'Budget',
+            timeline: 'Tijdslijn'
+          };
+          clientContext += `${labels[key] || key}: ${value}\n`;
+        }
+      });
+    }
+
     const systemPrompt = `Je bent Simon A.I+, een gespecialiseerde verzekering matching assistent. Je helpt verzekeringsadviseurs bij het vinden van de beste verzekeringen voor hun klanten.
 
 Je expertise:
@@ -76,12 +109,14 @@ Voor elke klant situatie geef je:
 4. Aandachtspunten en vergelijkingscriteria
 5. Praktische volgende stappen
 
+${clientContext}
+
 ${documentContext ? `BESCHIKBARE DOCUMENTEN:
 ${documentContext}
 
 Wanneer relevante documenten beschikbaar zijn, verwijs er dan naar in je antwoord en citeer specifieke informatie. Gebruik de documenttitels en maatschappijen bij het refereren naar informatie. Geef altijd aan wanneer informatie uit specifieke documenten komt.` : ''}
 
-Spreek professioneel maar toegankelijk Nederlands. Focus op concrete, bruikbare adviezen.`;
+Spreek professioneel maar toegankelijk Nederlands. Focus op concrete, bruikbare adviezen.${clientProfile || intakeData ? ' Je hebt toegang tot client informatie - gebruik dit om gepersonaliseerd advies te geven.' : ''}`;
 
     const messages = [
       { role: 'system', content: systemPrompt },
