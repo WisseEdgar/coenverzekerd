@@ -28,13 +28,13 @@ export default function SaveClientDialog({
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
-    client_type: (initialData?.client_type || 'private') as 'private' | 'business',
+    client_type: (initialData?.client_type === 'zakelijk' ? 'business' : 'private') as 'private' | 'business',
     full_name: initialData?.full_name || '',
     company_name: initialData?.company_name || '',
     email: initialData?.email || '',
     phone: initialData?.phone || '',
     address: initialData?.address || '',
-    advisor_notes: conversationSummary || ''
+    advisor_notes: conversationSummary || initialData?.additional_info || ''
   });
 
   const handleSave = async () => {
