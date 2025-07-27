@@ -49,7 +49,14 @@ export const DocumentUpload = () => {
 
       // Upload file to Supabase Storage
       const fileExt = fileData.file.name.split('.').pop();
-      const fileName = `${Date.now()}-${fileData.file.name}`;
+      // Sanitize filename by removing special characters and replacing spaces with hyphens
+      const sanitizedFileName = fileData.file.name
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remove diacritics/accents
+        .replace(/[^a-zA-Z0-9.-]/g, '-') // Replace special chars with hyphens
+        .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+        .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+      const fileName = `${Date.now()}-${sanitizedFileName}`;
       const filePath = `${fileName}`;
 
       const { data: uploadData, error: uploadError } = await supabase.storage
