@@ -57,7 +57,7 @@ export function AppSidebar() {
     isActive
   }: {
     isActive: boolean;
-  }) => isActive ? "bg-simon-green text-white font-medium hover:bg-simon-green-dark" : "text-black hover:bg-simon-green-light hover:text-simon-green";
+  }) => isActive ? "bg-simon-green text-black font-medium hover:bg-simon-green-dark" : "text-black hover:bg-simon-green-light hover:text-simon-green";
   return <Sidebar collapsible="icon">
       <SidebarContent className="bg-background border-r border-border">
         {/* Header */}
