@@ -20,10 +20,6 @@ const mainItems = [{
   icon: BarChart3
 }];
 const toolsItems = [{
-  title: "Documenten",
-  url: "/dashboard/documents",
-  icon: FileText
-}, {
   title: "AI Chat",
   url: "/dashboard/chat",
   icon: MessageSquare
@@ -31,6 +27,12 @@ const toolsItems = [{
   title: "Templates",
   url: "/dashboard/templates",
   icon: Folder
+}];
+
+const adminToolsItems = [{
+  title: "Documenten",
+  url: "/dashboard/documents",
+  icon: FileText
 }];
 const settingsItems = [{
   title: "Instellingen",
@@ -88,6 +90,19 @@ export function AppSidebar() {
           <SidebarGroupLabel>Tools</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              {/* Admin-only tools */}
+              <AdminOnly>
+                {adminToolsItems.map(item => <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink to={item.url} className={getNavCls}>
+                        <item.icon className="h-4 w-4" />
+                        {!isCollapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>)}
+              </AdminOnly>
+              
+              {/* Regular tools */}
               {toolsItems.map(item => <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} className={getNavCls}>
