@@ -313,6 +313,22 @@ export type Database = {
         Args: { "": string } | { "": unknown } | { "": unknown }
         Returns: string
       }
+      search_documents: {
+        Args: {
+          query_embedding: string
+          match_threshold?: number
+          match_count?: number
+        }
+        Returns: {
+          id: string
+          title: string
+          filename: string
+          summary: string
+          insurance_type: string
+          insurance_company: string
+          similarity: number
+        }[]
+      }
       sparsevec_out: {
         Args: { "": unknown }
         Returns: unknown
