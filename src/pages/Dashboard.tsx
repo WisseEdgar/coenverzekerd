@@ -6,6 +6,7 @@ import { Users, Search, FileText, TrendingUp } from "lucide-react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import Chat from "./Chat";
 import Documents from "./Documents";
+import Admin from "./Admin";
 
 const Dashboard = () => {
   const location = useLocation();
@@ -31,6 +32,7 @@ const Dashboard = () => {
           {/* Dashboard Content */}
           <main className="flex-1 p-6">
             <Routes>
+              <Route path="/admin" element={<Admin />} />
               <Route path="/documents" element={<Documents />} />
               <Route path="/" element={
                 <div className="max-w-7xl mx-auto space-y-6">

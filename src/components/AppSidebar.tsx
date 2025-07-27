@@ -32,6 +32,10 @@ const toolsItems = [{
   icon: Folder
 }];
 const settingsItems = [{
+  title: "Beheer",
+  url: "/dashboard/admin",
+  icon: Settings
+}, {
   title: "Instellingen",
   url: "/dashboard/settings",
   icon: Settings
