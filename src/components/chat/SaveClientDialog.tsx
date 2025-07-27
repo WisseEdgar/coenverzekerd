@@ -27,14 +27,40 @@ export default function SaveClientDialog({
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   
+  // Create a comprehensive summary from intake data
+  const createAdvisorNotes = () => {
+    if (!initialData) return conversationSummary || '';
+    
+    const notes = [];
+    if (conversationSummary) notes.push(conversationSummary);
+    
+    if (initialData.situation_description) {
+      notes.push(`Situatie: ${initialData.situation_description}`);
+    }
+    if (initialData.insurance_needs) {
+      notes.push(`Verzekeringsbehoefte: ${initialData.insurance_needs}`);
+    }
+    if (initialData.current_coverage) {
+      notes.push(`Huidige verzekeringen: ${initialData.current_coverage}`);
+    }
+    if (initialData.budget) {
+      notes.push(`Budget: ${initialData.budget}`);
+    }
+    if (initialData.timeline) {
+      notes.push(`Tijdslijn: ${initialData.timeline}`);
+    }
+    
+    return notes.join('\n\n');
+  };
+
   const [formData, setFormData] = useState({
-    client_type: (initialData?.client_type === 'zakelijk' ? 'business' : 'private') as 'private' | 'business',
+    client_type: (initialData?.client_type === 'business' ? 'business' : 'private') as 'private' | 'business',
     full_name: initialData?.full_name || '',
     company_name: initialData?.company_name || '',
     email: initialData?.email || '',
     phone: initialData?.phone || '',
-    address: initialData?.address || '',
-    advisor_notes: conversationSummary || initialData?.additional_info || ''
+    address: '', // Address is not captured in the intake questionnaire
+    advisor_notes: createAdvisorNotes()
   });
 
   const handleSave = async () => {
