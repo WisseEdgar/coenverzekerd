@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -64,6 +64,21 @@ export default function SaveClientDialog({
     address: '', // Address is not captured in the intake questionnaire
     advisor_notes: createAdvisorNotes()
   });
+
+  // Update form data when dialog opens or initialData changes
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        client_type: (initialData?.client_type === 'business' ? 'business' : 'private') as 'private' | 'business',
+        full_name: initialData?.full_name || '',
+        company_name: initialData?.company_name || '',
+        email: initialData?.email || '',
+        phone: initialData?.phone || '',
+        address: '', // Address is not captured in the intake questionnaire
+        advisor_notes: createAdvisorNotes()
+      });
+    }
+  }, [isOpen, initialData, conversationSummary]);
 
   const handleSave = async () => {
     setLoading(true);
