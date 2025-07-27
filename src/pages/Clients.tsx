@@ -95,8 +95,8 @@ export default function Clients() {
     } catch (error) {
       console.error('Error loading clients:', error);
       toast({
-        title: "Error",
-        description: "Failed to load client profiles",
+        title: "Fout",
+        description: "Kon klantprofielen niet laden",
         variant: "destructive"
       });
     } finally {
@@ -168,13 +168,13 @@ export default function Clients() {
           .update(clientData)
           .eq('id', editingClient.id);
         if (error) throw error;
-        toast({ title: "Success", description: "Client profile updated successfully" });
+        toast({ title: "Gelukt", description: "Klantprofiel succesvol bijgewerkt" });
       } else {
         const { error } = await supabase
           .from('client_profiles')
           .insert([clientData]);
         if (error) throw error;
-        toast({ title: "Success", description: "Client profile created successfully" });
+        toast({ title: "Gelukt", description: "Klantprofiel succesvol aangemaakt" });
       }
 
       setIsDialogOpen(false);
@@ -184,8 +184,8 @@ export default function Clients() {
     } catch (error) {
       console.error('Error saving client:', error);
       toast({
-        title: "Error",
-        description: "Failed to save client profile",
+        title: "Fout",
+        description: "Kon klantprofiel niet opslaan",
         variant: "destructive"
       });
     }
@@ -228,13 +228,13 @@ export default function Clients() {
         .eq('id', clientId);
 
       if (error) throw error;
-      toast({ title: "Success", description: "Client profile deleted successfully" });
+      toast({ title: "Gelukt", description: "Klantprofiel succesvol verwijderd" });
       loadClients();
     } catch (error) {
       console.error('Error deleting client:', error);
       toast({
-        title: "Error",
-        description: "Failed to delete client profile",
+        title: "Fout",
+        description: "Kon klantprofiel niet verwijderen",
         variant: "destructive"
       });
     }
@@ -258,36 +258,36 @@ export default function Clients() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-96">Loading...</div>;
+    return <div className="flex items-center justify-center h-96">Laden...</div>;
   }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Client Profiles</h1>
-          <p className="text-muted-foreground">Manage your client information and profiles</p>
+          <h1 className="text-3xl font-bold">Klantprofielen</h1>
+          <p className="text-muted-foreground">Beheer je klantinformatie en profielen</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={openNewClientDialog}>
               <Plus className="mr-2 h-4 w-4" />
-              New Client
+              Nieuwe Klant
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                {editingClient ? 'Edit Client Profile' : 'Create New Client Profile'}
+                {editingClient ? 'Klantprofiel Bewerken' : 'Nieuw Klantprofiel Aanmaken'}
               </DialogTitle>
               <DialogDescription>
-                Fill in the client information below. All fields are optional unless specified.
+                Vul de klantinformatie hieronder in. Alle velden zijn optioneel tenzij anders aangegeven.
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-6">
               <div className="grid gap-4">
-                <Label htmlFor="client_type">Client Type</Label>
+                <Label htmlFor="client_type">Klanttype</Label>
                 <Select 
                   value={formData.client_type} 
                   onValueChange={(value: 'private' | 'business') => 
@@ -298,8 +298,8 @@ export default function Clients() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="private">Private Client</SelectItem>
-                    <SelectItem value="business">Business Client</SelectItem>
+                    <SelectItem value="private">Particuliere Klant</SelectItem>
+                    <SelectItem value="business">Zakelijke Klant</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -308,7 +308,7 @@ export default function Clients() {
                 <TabsContent value="private" className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="full_name">Full Name</Label>
+                      <Label htmlFor="full_name">Volledige Naam</Label>
                       <Input
                         id="full_name"
                         value={formData.full_name}
@@ -316,7 +316,7 @@ export default function Clients() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="email">Email</Label>
+                      <Label htmlFor="email">E-mail</Label>
                       <Input
                         id="email"
                         type="email"
@@ -325,7 +325,7 @@ export default function Clients() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="phone">Phone</Label>
+                      <Label htmlFor="phone">Telefoon</Label>
                       <Input
                         id="phone"
                         value={formData.phone}
@@ -333,7 +333,7 @@ export default function Clients() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="birth_date">Birth Date</Label>
+                      <Label htmlFor="birth_date">Geboortedatum</Label>
                       <Input
                         id="birth_date"
                         type="date"
@@ -350,7 +350,7 @@ export default function Clients() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="marital_status">Marital Status</Label>
+                      <Label htmlFor="marital_status">Burgerlijke Staat</Label>
                       <Input
                         id="marital_status"
                         value={formData.marital_status}
@@ -358,7 +358,7 @@ export default function Clients() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="household_members">Household Members</Label>
+                      <Label htmlFor="household_members">Huishoudleden</Label>
                       <Input
                         id="household_members"
                         type="number"
@@ -367,7 +367,7 @@ export default function Clients() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="occupation">Occupation</Label>
+                      <Label htmlFor="occupation">Beroep</Label>
                       <Input
                         id="occupation"
                         value={formData.occupation}
@@ -375,7 +375,7 @@ export default function Clients() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="employment_type">Employment Type</Label>
+                      <Label htmlFor="employment_type">Dienstverband</Label>
                       <Input
                         id="employment_type"
                         value={formData.employment_type}
@@ -383,7 +383,7 @@ export default function Clients() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="gross_annual_income">Gross Annual Income (€)</Label>
+                      <Label htmlFor="gross_annual_income">Bruto Jaarinkomen (€)</Label>
                       <Input
                         id="gross_annual_income"
                         type="number"
@@ -397,7 +397,7 @@ export default function Clients() {
                 <TabsContent value="business" className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="company_name">Company Name</Label>
+                      <Label htmlFor="company_name">Bedrijfsnaam</Label>
                       <Input
                         id="company_name"
                         value={formData.company_name}
@@ -405,7 +405,7 @@ export default function Clients() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="company_legal_name">Legal Name</Label>
+                      <Label htmlFor="company_legal_name">Juridische Naam</Label>
                       <Input
                         id="company_legal_name"
                         value={formData.company_legal_name}
@@ -413,7 +413,7 @@ export default function Clients() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="kvk_number">KVK Number</Label>
+                      <Label htmlFor="kvk_number">KVK Nummer</Label>
                       <Input
                         id="kvk_number"
                         value={formData.kvk_number}
@@ -421,7 +421,7 @@ export default function Clients() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="btw_number">BTW Number</Label>
+                      <Label htmlFor="btw_number">BTW Nummer</Label>
                       <Input
                         id="btw_number"
                         value={formData.btw_number}
@@ -429,7 +429,7 @@ export default function Clients() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="legal_form">Legal Form</Label>
+                      <Label htmlFor="legal_form">Rechtsvorm</Label>
                       <Input
                         id="legal_form"
                         value={formData.legal_form}
@@ -437,7 +437,7 @@ export default function Clients() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="founding_year">Founding Year</Label>
+                      <Label htmlFor="founding_year">Oprichtingsjaar</Label>
                       <Input
                         id="founding_year"
                         type="number"
@@ -446,7 +446,7 @@ export default function Clients() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="annual_revenue">Annual Revenue (€)</Label>
+                      <Label htmlFor="annual_revenue">Jaaromzet (€)</Label>
                       <Input
                         id="annual_revenue"
                         type="number"
@@ -455,7 +455,7 @@ export default function Clients() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="number_of_employees">Number of Employees</Label>
+                      <Label htmlFor="number_of_employees">Aantal Werknemers</Label>
                       <Input
                         id="number_of_employees"
                         type="number"
@@ -464,7 +464,7 @@ export default function Clients() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="email">Email</Label>
+                      <Label htmlFor="email">E-mail</Label>
                       <Input
                         id="email"
                         type="email"
@@ -473,7 +473,7 @@ export default function Clients() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="phone">Phone</Label>
+                      <Label htmlFor="phone">Telefoon</Label>
                       <Input
                         id="phone"
                         value={formData.phone}
@@ -485,7 +485,7 @@ export default function Clients() {
               </Tabs>
 
               <div>
-                <Label htmlFor="address">Address</Label>
+                <Label htmlFor="address">Adres</Label>
                 <Textarea
                   id="address"
                   value={formData.address}
@@ -494,10 +494,10 @@ export default function Clients() {
               </div>
 
               <div>
-                <Label htmlFor="advisor_notes">Advisor Notes</Label>
+                <Label htmlFor="advisor_notes">Adviseur Notities</Label>
                 <Textarea
                   id="advisor_notes"
-                  placeholder="Add any additional notes about this client..."
+                  placeholder="Voeg aanvullende notities over deze klant toe..."
                   value={formData.advisor_notes}
                   onChange={(e) => setFormData(prev => ({ ...prev, advisor_notes: e.target.value }))}
                 />
@@ -505,10 +505,10 @@ export default function Clients() {
 
               <div className="flex justify-end space-x-2">
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancel
+                  Annuleren
                 </Button>
                 <Button onClick={handleSave}>
-                  {editingClient ? 'Update' : 'Create'} Client
+                  {editingClient ? 'Bijwerken' : 'Aanmaken'}
                 </Button>
               </div>
             </div>
@@ -520,7 +520,7 @@ export default function Clients() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search clients by name, company, or email..."
+            placeholder="Zoek klanten op naam, bedrijf of e-mail..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -531,9 +531,9 @@ export default function Clients() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Clients</SelectItem>
-            <SelectItem value="private">Private Clients</SelectItem>
-            <SelectItem value="business">Business Clients</SelectItem>
+            <SelectItem value="all">Alle Klanten</SelectItem>
+            <SelectItem value="private">Particuliere Klanten</SelectItem>
+            <SelectItem value="business">Zakelijke Klanten</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -542,17 +542,17 @@ export default function Clients() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <User className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">No clients found</h3>
+            <h3 className="text-lg font-medium mb-2">Geen klanten gevonden</h3>
             <p className="text-muted-foreground mb-4">
               {clients.length === 0 
-                ? "Get started by creating your first client profile"
-                : "Try adjusting your search or filter criteria"
+                ? "Begin door je eerste klantprofiel aan te maken"
+                : "Probeer je zoek- of filtercriteria aan te passen"
               }
             </p>
             {clients.length === 0 && (
               <Button onClick={openNewClientDialog}>
                 <Plus className="mr-2 h-4 w-4" />
-                Create First Client
+                Eerste Klant Aanmaken
               </Button>
             )}
           </CardContent>
@@ -566,11 +566,11 @@ export default function Clients() {
                   <div className="space-y-1">
                     <CardTitle className="flex items-center gap-2">
                       {client.client_type === 'private' ? <User className="h-5 w-5" /> : <Building className="h-5 w-5" />}
-                      {client.client_type === 'private' ? client.full_name || 'Unnamed Client' : client.company_name || 'Unnamed Company'}
+                      {client.client_type === 'private' ? client.full_name || 'Naamloze Klant' : client.company_name || 'Naamloos Bedrijf'}
                     </CardTitle>
                     <CardDescription>
                       <Badge variant={client.client_type === 'private' ? 'default' : 'secondary'}>
-                        {client.client_type === 'private' ? 'Private' : 'Business'}
+                        {client.client_type === 'private' ? 'Particulier' : 'Zakelijk'}
                       </Badge>
                       {client.email && <span className="ml-2">{client.email}</span>}
                       {client.phone && <span className="ml-2">• {client.phone}</span>}
@@ -590,12 +590,12 @@ export default function Clients() {
                 <CardContent>
                   {client.address && (
                     <p className="text-sm text-muted-foreground mb-2">
-                      <strong>Address:</strong> {client.address}
+                      <strong>Adres:</strong> {client.address}
                     </p>
                   )}
                   {client.advisor_notes && (
                     <p className="text-sm text-muted-foreground">
-                      <strong>Notes:</strong> {client.advisor_notes}
+                      <strong>Notities:</strong> {client.advisor_notes}
                     </p>
                   )}
                 </CardContent>
