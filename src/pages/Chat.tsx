@@ -456,7 +456,7 @@ const Chat = () => {
                 selectedClient={selectedClient}
                 onClientSelect={handleClientSelect}
               />
-              {!selectedClient && !intakeData && messages.length === 0 && (
+              {!selectedClient && !intakeData && (
                 <Button
                   onClick={handleStartChat}
                   variant="outline"
