@@ -53,6 +53,108 @@ export type Database = {
         }
         Relationships: []
       }
+      client_profiles: {
+        Row: {
+          address: string | null
+          advisor_id: string
+          advisor_notes: string | null
+          annual_revenue: number | null
+          birth_date: string | null
+          bsn: string | null
+          btw_number: string | null
+          client_type: string
+          company_legal_name: string | null
+          company_name: string | null
+          created_at: string
+          current_insurances: Json | null
+          email: string | null
+          employment_type: string | null
+          founding_year: number | null
+          full_name: string | null
+          gross_annual_income: number | null
+          household_members: number | null
+          id: string
+          insurance_history: Json | null
+          intake_responses: Json | null
+          kvk_number: string | null
+          legal_form: string | null
+          marital_status: string | null
+          net_annual_income: number | null
+          number_of_employees: number | null
+          occupation: string | null
+          phone: string | null
+          preferences: Json | null
+          risk_assessment: Json | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          advisor_id: string
+          advisor_notes?: string | null
+          annual_revenue?: number | null
+          birth_date?: string | null
+          bsn?: string | null
+          btw_number?: string | null
+          client_type: string
+          company_legal_name?: string | null
+          company_name?: string | null
+          created_at?: string
+          current_insurances?: Json | null
+          email?: string | null
+          employment_type?: string | null
+          founding_year?: number | null
+          full_name?: string | null
+          gross_annual_income?: number | null
+          household_members?: number | null
+          id?: string
+          insurance_history?: Json | null
+          intake_responses?: Json | null
+          kvk_number?: string | null
+          legal_form?: string | null
+          marital_status?: string | null
+          net_annual_income?: number | null
+          number_of_employees?: number | null
+          occupation?: string | null
+          phone?: string | null
+          preferences?: Json | null
+          risk_assessment?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          advisor_id?: string
+          advisor_notes?: string | null
+          annual_revenue?: number | null
+          birth_date?: string | null
+          bsn?: string | null
+          btw_number?: string | null
+          client_type?: string
+          company_legal_name?: string | null
+          company_name?: string | null
+          created_at?: string
+          current_insurances?: Json | null
+          email?: string | null
+          employment_type?: string | null
+          founding_year?: number | null
+          full_name?: string | null
+          gross_annual_income?: number | null
+          household_members?: number | null
+          id?: string
+          insurance_history?: Json | null
+          intake_responses?: Json | null
+          kvk_number?: string | null
+          legal_form?: string | null
+          marital_status?: string | null
+          net_annual_income?: number | null
+          number_of_employees?: number | null
+          occupation?: string | null
+          phone?: string | null
+          preferences?: Json | null
+          risk_assessment?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string
