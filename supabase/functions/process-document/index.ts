@@ -111,7 +111,20 @@ serve(async (req) => {
     });
 
     const extractionData = await extractionResponse.json();
-    const extractionResult = JSON.parse(extractionData.choices[0].message.content);
+    
+    // Clean the response content to handle markdown code blocks
+    let contentText = extractionData.choices[0].message.content.trim();
+    
+    // Remove markdown code blocks if present
+    if (contentText.startsWith('```json')) {
+      contentText = contentText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (contentText.startsWith('```')) {
+      contentText = contentText.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+    
+    console.log('Cleaned content for parsing:', contentText);
+    
+    const extractionResult = JSON.parse(contentText);
 
     console.log('Extraction result:', extractionResult);
 
