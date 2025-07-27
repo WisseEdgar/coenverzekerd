@@ -146,7 +146,7 @@ export default function SaveClientDialog({
               }
             >
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Selecteer klanttype" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="private">Particuliere Klant</SelectItem>
