@@ -31,6 +31,8 @@ export default function SaveClientDialog({
   const createAdvisorNotes = () => {
     if (!initialData) return conversationSummary || '';
     
+    console.log('SaveClientDialog initialData:', initialData);
+    
     const notes = [];
     if (conversationSummary) notes.push(conversationSummary);
     
