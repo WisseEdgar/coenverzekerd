@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Send, Settings, MessageSquare, Clock, X, BarChart3 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Send, Settings, MessageSquare, X, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -9,157 +9,269 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  created_at: string;
+}
+
+interface Conversation {
+  id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+}
+
 const Chat = () => {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [activeConversationId, setActiveConversationId] = useState<string>("default");
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [user, setUser] = useState<any>(null);
   const { toast } = useToast();
 
-  // Store conversations with their chat history
-  const [conversations, setConversations] = useState<{[key: string]: {
-    id: string;
-    title: string;
-    messages: Array<{type: string; content: string}>;
-    lastUpdated: Date;
-  }}>({
-    default: {
-      id: "default",
-      title: "Nieuwe chat",
-      messages: [
-        {
-          type: "assistant", 
-          content: "Hallo! Ik ben Simon A.I+, je persoonlijke verzekering matching assistent. Beschrijf de situatie van je klant en ik help je de beste verzekeringopties te vinden. Wat kan ik voor je doen?"
-        }
-      ],
-      lastUpdated: new Date()
-    }
-  });
+  // Check auth and load conversations on mount
+  useEffect(() => {
+    checkAuth();
+  }, []);
 
-  // Get current chat messages
-  const currentChat = conversations[activeConversationId]?.messages || [];
-  const setCurrentChat = (messages: Array<{type: string; content: string}>) => {
-    setConversations(prev => ({
-      ...prev,
-      [activeConversationId]: {
-        ...prev[activeConversationId],
-        messages,
-        lastUpdated: new Date()
+  const checkAuth = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      setUser(user);
+      await loadConversations();
+    } else {
+      // Redirect to auth if not authenticated
+      window.location.href = '/auth';
+    }
+  };
+
+  const loadConversations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('conversations')
+        .select('*')
+        .order('updated_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setConversations(data);
+        // Load the most recent conversation by default
+        await loadConversation(data[0]);
+      } else {
+        // Create first conversation if none exist
+        await handleNewChat();
       }
-    }));
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+      toast({
+        title: "Fout bij laden gesprekken",
+        description: "Er is iets misgegaan bij het laden van je gesprekken.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const loadConversation = async (conversation: Conversation) => {
+    try {
+      setActiveConversation(conversation);
+      
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', conversation.id)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      if (data && data.length === 0) {
+        // Add welcome message if conversation is empty
+        await addWelcomeMessage(conversation.id);
+      } else {
+        setMessages((data || []) as Message[]);
+      }
+    } catch (error) {
+      console.error('Error loading conversation:', error);
+      toast({
+        title: "Fout bij laden gesprek",
+        description: "Er is iets misgegaan bij het laden van dit gesprek.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const addWelcomeMessage = async (conversationId: string) => {
+    const welcomeContent = "Hallo! Ik ben Simon A.I+, je persoonlijke verzekering matching assistent. Beschrijf de situatie van je klant en ik help je de beste verzekeringopties te vinden. Wat kan ik voor je doen?";
+    
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: conversationId,
+          role: 'assistant',
+          content: welcomeContent
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setMessages([data as Message]);
+      }
+    } catch (error) {
+      console.error('Error adding welcome message:', error);
+    }
   };
 
   const generateConversationTitle = (firstMessage: string) => {
-    // Generate a title from the first user message, max 40 characters
     return firstMessage.length > 40 ? firstMessage.substring(0, 40) + "..." : firstMessage;
   };
 
-  const handleNewChat = () => {
-    const newId = `chat_${Date.now()}`;
-    const newConversation = {
-      id: newId,
-      title: "Nieuwe chat",
-      messages: [
-        {
-          type: "assistant", 
-          content: "Hallo! Ik ben Simon A.I+, je persoonlijke verzekering matching assistent. Beschrijf de situatie van je klant en ik help je de beste verzekeringopties te vinden. Wat kan ik voor je doen?"
-        }
-      ],
-      lastUpdated: new Date()
-    };
+  const handleNewChat = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('conversations')
+        .insert({
+          user_id: user.id,
+          title: "Nieuwe chat"
+        })
+        .select()
+        .single();
 
-    setConversations(prev => ({
-      ...prev,
-      [newId]: newConversation
-    }));
-    setActiveConversationId(newId);
-    setMessage("");
-  };
+      if (error) throw error;
 
-  const handleConversationClick = (conversationId: string) => {
-    setActiveConversationId(conversationId);
-    setMessage("");
-  };
-
-  const handleDeleteConversation = (conversationId: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent triggering the conversation click
-    
-    if (conversationId === "default") {
-      // Reset default conversation instead of deleting
-      setConversations(prev => ({
-        ...prev,
-        default: {
-          id: "default",
-          title: "Nieuwe chat",
-          messages: [
-            {
-              type: "assistant", 
-              content: "Hallo! Ik ben Simon A.I+, je persoonlijke verzekering matching assistent. Beschrijf de situatie van je klant en ik help je de beste verzekeringopties te vinden. Wat kan ik voor je doen?"
-            }
-          ],
-          lastUpdated: new Date()
-        }
-      }));
-    } else {
-      // Delete the conversation
-      setConversations(prev => {
-        const { [conversationId]: deleted, ...remaining } = prev;
-        return remaining;
-      });
-      
-      // If the deleted conversation was active, switch to default
-      if (activeConversationId === conversationId) {
-        setActiveConversationId("default");
+      if (data) {
+        const newConversation = data;
+        setConversations(prev => [newConversation, ...prev]);
+        await loadConversation(newConversation);
       }
+    } catch (error) {
+      console.error('Error creating new conversation:', error);
+      toast({
+        title: "Fout bij maken nieuwe chat",
+        description: "Er is iets misgegaan bij het maken van een nieuwe chat.",
+        variant: "destructive",
+      });
     }
   };
 
-    const handleSendMessage = async () => {
-    if (!message.trim() || isLoading) return;
+  const handleConversationClick = async (conversation: Conversation) => {
+    await loadConversation(conversation);
+  };
+
+  const handleDeleteConversation = async (conversationId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    try {
+      const { error } = await supabase
+        .from('conversations')
+        .delete()
+        .eq('id', conversationId);
+
+      if (error) throw error;
+
+      // Update local state
+      setConversations(prev => prev.filter(conv => conv.id !== conversationId));
+      
+      // If deleted conversation was active, load another one or create new
+      if (activeConversation?.id === conversationId) {
+        const remainingConversations = conversations.filter(conv => conv.id !== conversationId);
+        if (remainingConversations.length > 0) {
+          await loadConversation(remainingConversations[0]);
+        } else {
+          await handleNewChat();
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      toast({
+        title: "Fout bij verwijderen gesprek",
+        description: "Er is iets misgegaan bij het verwijderen van dit gesprek.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!message.trim() || isLoading || !activeConversation) return;
 
     const userMessage = message.trim();
     setMessage("");
     setIsLoading(true);
 
-    // Add user message to chat
-    const newUserMessage = { type: "user", content: userMessage };
-    const updatedMessages = [...currentChat, newUserMessage];
-    setCurrentChat(updatedMessages);
-
-    // Update conversation title if this is the first user message
-    const currentConv = conversations[activeConversationId];
-    if (currentConv && currentConv.title === "Nieuwe chat" && currentConv.messages.length === 1) {
-      setConversations(prev => ({
-        ...prev,
-        [activeConversationId]: {
-          ...prev[activeConversationId],
-          title: generateConversationTitle(userMessage)
-        }
-      }));
-    }
-
     try {
-      // Prepare conversation history for API (exclude the welcome message for API)
+      // Add user message to database
+      const { data: userMessageData, error: userError } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: activeConversation.id,
+          role: 'user',
+          content: userMessage
+        })
+        .select()
+        .single();
+
+      if (userError) throw userError;
+
+      // Update local messages
+      const updatedMessages = [...messages, userMessageData as Message];
+      setMessages(updatedMessages);
+
+      // Update conversation title if this is the first user message
+      const userMessages = updatedMessages.filter(msg => msg.role === 'user');
+      if (userMessages.length === 1) {
+        const newTitle = generateConversationTitle(userMessage);
+        
+        const { error: titleError } = await supabase
+          .from('conversations')
+          .update({ title: newTitle })
+          .eq('id', activeConversation.id);
+
+        if (!titleError) {
+          setActiveConversation(prev => prev ? { ...prev, title: newTitle } : null);
+          setConversations(prev => prev.map(conv => 
+            conv.id === activeConversation.id ? { ...conv, title: newTitle } : conv
+          ));
+        }
+      }
+
+      // Prepare conversation history for API (exclude welcome messages)
       const conversationHistory = updatedMessages
-        .filter(msg => !(msg.type === "assistant" && msg.content.includes("Hallo! Ik ben Simon A.I+")))
+        .filter(msg => !(msg.role === "assistant" && msg.content.includes("Hallo! Ik ben Simon A.I+")))
         .map(msg => ({
-          role: msg.type === "user" ? "user" : "assistant",
+          role: msg.role,
           content: msg.content
         }));
 
-      const { data, error } = await supabase.functions.invoke('simon-chat', {
+      // Call Simon AI
+      const { data: aiData, error: aiError } = await supabase.functions.invoke('simon-chat', {
         body: {
           message: userMessage,
           conversationHistory: conversationHistory
         }
       });
 
-      if (error) {
-        throw error;
-      }
+      if (aiError) throw aiError;
 
-      // Add AI response to chat
-      const aiMessage = { type: "assistant", content: data.response };
-      setCurrentChat([...updatedMessages, aiMessage]);
+      // Add AI response to database
+      const { data: aiMessageData, error: aiMessageError } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: activeConversation.id,
+          role: 'assistant',
+          content: aiData.response
+        })
+        .select()
+        .single();
+
+      if (aiMessageError) throw aiMessageError;
+
+      // Update local messages
+      setMessages(prev => [...prev, aiMessageData as Message]);
 
     } catch (error) {
       console.error('Chat error:', error);
@@ -169,12 +281,16 @@ const Chat = () => {
         variant: "destructive",
       });
       
-      // Remove user message if API call failed
-      setCurrentChat(currentChat);
+      // Remove failed user message if it was added
+      setMessages(prev => prev.filter(msg => msg.content !== userMessage || msg.role !== 'user'));
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (!user) {
+    return <div className="flex items-center justify-center h-screen">Laden...</div>;
+  }
 
   return (
     <div className="flex h-screen bg-background">
@@ -200,15 +316,13 @@ const Chat = () => {
           
           <ScrollArea className="h-full">
             <div className="space-y-2">
-              {Object.values(conversations)
-                .sort((a, b) => b.lastUpdated.getTime() - a.lastUpdated.getTime())
-                .map((conv) => (
+              {conversations.map((conv) => (
                 <Card 
                   key={conv.id} 
                   className={`group p-3 hover:bg-accent cursor-pointer transition-colors relative ${
-                    activeConversationId === conv.id ? 'bg-accent border-simon-green' : ''
+                    activeConversation?.id === conv.id ? 'bg-accent border-simon-green' : ''
                   }`}
-                  onClick={() => handleConversationClick(conv.id)}
+                  onClick={() => handleConversationClick(conv)}
                 >
                   <div className="flex items-start gap-2">
                     <MessageSquare className="h-4 w-4 mt-0.5 text-muted-foreground" />
@@ -226,7 +340,6 @@ const Chat = () => {
               ))}
             </div>
           </ScrollArea>
-
         </div>
 
         {/* Footer */}
@@ -248,7 +361,7 @@ const Chat = () => {
             </Avatar>
             <div>
               <h2 className="font-semibold">Simon A.I+</h2>
-              <p className="text-sm text-muted-foreground">{conversations[activeConversationId]?.title || "Verzekering Matching Assistent"}</p>
+              <p className="text-sm text-muted-foreground">{activeConversation?.title || "Verzekering Matching Assistent"}</p>
             </div>
           </div>
         </div>
@@ -256,17 +369,17 @@ const Chat = () => {
         {/* Messages */}
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-6 max-w-4xl">
-            {currentChat.map((msg, index) => (
-              <div key={index} className={`flex gap-3 ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                {msg.type === 'assistant' && (
+            {messages.map((msg) => (
+              <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                {msg.role === 'assistant' && (
                   <Avatar className="h-8 w-8 mt-1">
                     <AvatarFallback className="bg-simon-green text-white text-xs">SA</AvatarFallback>
                   </Avatar>
                 )}
-                <Card className={`p-4 max-w-2xl ${msg.type === 'user' ? 'bg-simon-green text-white' : 'bg-muted'}`}>
+                <Card className={`p-4 max-w-2xl ${msg.role === 'user' ? 'bg-simon-green text-white' : 'bg-muted'}`}>
                   <p className="text-sm whitespace-pre-line">{msg.content}</p>
                 </Card>
-                {msg.type === 'user' && (
+                {msg.role === 'user' && (
                   <Avatar className="h-8 w-8 mt-1">
                     <AvatarFallback>VB</AvatarFallback>
                   </Avatar>
