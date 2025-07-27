@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.52.1';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
@@ -15,7 +16,49 @@ serve(async (req) => {
   }
 
   try {
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
     const { message, conversationHistory } = await req.json();
+
+    // Generate embedding for the user's message to find relevant documents
+    console.log('Generating embedding for semantic search...');
+    const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'text-embedding-3-small',
+        input: message,
+      }),
+    });
+
+    const embeddingData = await embeddingResponse.json();
+    const queryEmbedding = embeddingData.data[0].embedding;
+
+    // Search for relevant documents using simple text search (vector search will be added later)
+    console.log('Searching for relevant documents...');
+    const { data: docs } = await supabase
+      .from('documents')
+      .select(`
+        title, 
+        summary,
+        filename,
+        insurance_types(name), 
+        insurance_companies(name)
+      `)
+      .limit(3);
+
+    let documentContext = '';
+    if (docs && docs.length > 0) {
+      documentContext = docs.map(doc => 
+        `Document: ${doc.title}\nBestand: ${doc.filename}\nType: ${doc.insurance_types?.name || 'Onbekend'}\nMaatschappij: ${doc.insurance_companies?.name || 'Onbekend'}\nSamenvatting: ${doc.summary || 'Geen samenvatting beschikbaar'}`
+      ).join('\n\n');
+    }
 
     const systemPrompt = `Je bent Simon A.I+, een gespecialiseerde verzekering matching assistent. Je helpt verzekeringsadviseurs bij het vinden van de beste verzekeringen voor hun klanten.
 
@@ -32,6 +75,11 @@ Voor elke klant situatie geef je:
 3. Uitleg waarom deze matches het beste passen
 4. Aandachtspunten en vergelijkingscriteria
 5. Praktische volgende stappen
+
+${documentContext ? `BESCHIKBARE DOCUMENTEN:
+${documentContext}
+
+Wanneer relevante documenten beschikbaar zijn, verwijs er dan naar in je antwoord en citeer specifieke informatie. Gebruik de documenttitels en maatschappijen bij het refereren naar informatie. Geef altijd aan wanneer informatie uit specifieke documenten komt.` : ''}
 
 Spreek professioneel maar toegankelijk Nederlands. Focus op concrete, bruikbare adviezen.`;
 

@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Users, Search, FileText, TrendingUp } from "lucide-react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import Chat from "./Chat";
+import Documents from "./Documents";
 
 const Dashboard = () => {
   const location = useLocation();
@@ -30,6 +31,7 @@ const Dashboard = () => {
           {/* Dashboard Content */}
           <main className="flex-1 p-6">
             <Routes>
+              <Route path="/documents" element={<Documents />} />
               <Route path="/" element={
                 <div className="max-w-7xl mx-auto space-y-6">
                   {/* Welcome Section */}
