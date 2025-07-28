@@ -146,26 +146,6 @@ const Chat = () => {
       console.error('Error adding welcome message:', error);
     }
   };
-
-  const addWelcomeMessageForNewChat = async (conversationId: string) => {
-    const welcomeContent = "Hallo! Ik ben Simon A.I+, je persoonlijke verzekering matching assistent. Beschrijf de situatie van je klant en ik help je de beste verzekeringopties te vinden. Wat kan ik voor je doen?";
-    try {
-      const {
-        data,
-        error
-      } = await supabase.from('messages').insert({
-        conversation_id: conversationId,
-        role: 'assistant',
-        content: welcomeContent
-      }).select().single();
-      if (error) throw error;
-      if (data) {
-        setMessages([data as Message]);
-      }
-    } catch (error) {
-      console.error('Error adding welcome message:', error);
-    }
-  };
   const generateConversationTitle = (firstMessage: string) => {
     return firstMessage.length > 40 ? firstMessage.substring(0, 40) + "..." : firstMessage;
   };
@@ -175,7 +155,6 @@ const Chat = () => {
       setSelectedClient(null);
       setIntakeData(null);
       setShowIntake(false);
-      
       const {
         data,
         error
@@ -187,12 +166,7 @@ const Chat = () => {
       if (data) {
         const newConversation = data;
         setConversations(prev => [newConversation, ...prev]);
-        
-        // Set the conversation as active first
-        setActiveConversation(newConversation);
-        
-        // Add welcome message without any client context
-        await addWelcomeMessageForNewChat(newConversation.id);
+        await loadConversation(newConversation);
       }
     } catch (error) {
       console.error('Error creating new conversation:', error);
@@ -425,7 +399,7 @@ const Chat = () => {
         </div>
 
         {/* Client Selection and Intake */}
-        {showIntake ? <div className="flex-1 flex items-center justify-center p-4">
+        {showIntake ? <div className="flex-1 flex items-center justify-center p-4 font-normal">
             <IntakeQuestionnaire onComplete={handleIntakeComplete} onSkip={handleIntakeSkip} onSaveAsClient={handleSaveAsClient} />
           </div> : <>
             {/* Client Selector */}
