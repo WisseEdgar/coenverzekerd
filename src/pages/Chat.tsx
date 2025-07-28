@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import ClientSelector from "@/components/chat/ClientSelector";
 import IntakeQuestionnaire from "@/components/chat/IntakeQuestionnaire";
 import SaveClientDialog from "@/components/chat/SaveClientDialog";
+import { ProfileDropdown } from "@/components/layout/ProfileDropdown";
 
 interface Message {
   id: string;
@@ -371,10 +372,13 @@ const Chat = () => {
       <div className="w-80 bg-card border-r border-border flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-border">
-          <Link to="/" className="flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity">
-            <BarChart3 className="h-8 w-8 text-simon-green bg-slate-50" />
-            <h1 className="text-xl font-bold text-simon-blue">Simon</h1>
-          </Link>
+          <div className="flex items-center justify-between mb-4">
+            <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <BarChart3 className="h-8 w-8 text-simon-green bg-slate-50" />
+              <h1 className="text-xl font-bold text-simon-blue">Simon</h1>
+            </Link>
+            <ProfileDropdown />
+          </div>
           <Button className="w-full" variant="simon" onClick={handleNewChat}>
             <Plus className="h-4 w-4 mr-2" />
             Nieuwe chat

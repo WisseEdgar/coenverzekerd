@@ -8,6 +8,7 @@ import Chat from "./Chat";
 import Documents from "./Documents";
 import Admin from "./Admin";
 import Clients from "./Clients";
+import { ProfileDropdown } from "@/components/layout/ProfileDropdown";
 
 const Dashboard = () => {
   const location = useLocation();
@@ -25,9 +26,12 @@ const Dashboard = () => {
         
         <div className="flex-1 flex flex-col">
           {/* Dashboard Header */}
-          <header className="h-16 border-b border-border flex items-center px-6 bg-background">
-            <SidebarTrigger className="mr-4" />
-            <h1 className="text-2xl font-bold text-simon-blue">Dashboard</h1>
+          <header className="h-16 border-b border-border flex items-center justify-between px-6 bg-background">
+            <div className="flex items-center">
+              <SidebarTrigger className="mr-4" />
+              <h1 className="text-2xl font-bold text-simon-blue">Dashboard</h1>
+            </div>
+            <ProfileDropdown />
           </header>
           
           {/* Dashboard Content */}
