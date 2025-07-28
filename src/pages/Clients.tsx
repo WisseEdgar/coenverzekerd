@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +54,7 @@ export default function Clients() {
   const [editingClient, setEditingClient] = useState<ClientProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [formData, setFormData] = useState({
     client_type: 'private' as 'private' | 'business',
@@ -82,6 +84,15 @@ export default function Clients() {
   useEffect(() => {
     loadClients();
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get('new') === 'true') {
+      openNewClientDialog();
+      // Clear the query parameter after opening the dialog
+      searchParams.delete('new');
+      setSearchParams(searchParams);
+    }
+  }, [searchParams, setSearchParams]);
 
   const loadClients = async () => {
     try {

@@ -133,7 +133,11 @@ const Dashboard = () => {
                           <Search className="h-6 w-6" />
                           Nieuwe Klant Matching
                         </Button>
-                        <Button variant="simon-outline" className="h-20 flex-col gap-2">
+                        <Button 
+                          variant="simon-outline" 
+                          className="h-20 flex-col gap-2"
+                          onClick={() => window.location.href = '/dashboard/clients?new=true'}
+                        >
                           <Users className="h-6 w-6" />
                           Klant Toevoegen
                         </Button>
