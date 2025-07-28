@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger, Sidebar, SidebarContent } from "@/components/ui/sidebar";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
@@ -371,64 +371,63 @@ const Chat = () => {
     <SidebarProvider>
       <div className="flex h-screen bg-background w-full">
         {/* Sidebar */}
-      <div className="w-80 bg-card border-r border-border flex flex-col">
-        {/* Header */}
-        <div className="p-4 border-b border-border">
-          <div className="flex items-center justify-between mb-4">
-            <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <BarChart3 className="h-8 w-8 text-simon-green bg-slate-50" />
-              <h1 className="text-xl font-bold text-simon-blue">Simon</h1>
-            </Link>
-            <ProfileDropdown />
-          </div>
-          <Button className="w-full" variant="simon" onClick={handleNewChat}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nieuwe chat
-          </Button>
-        </div>
-
-        {/* Conversations */}
-        <div className="flex-1 p-4">
-          <div className="mb-4">
-            <h2 className="text-sm font-medium text-muted-foreground mb-2">Je gesprekken</h2>
-          </div>
-          
-          <ScrollArea className="h-full">
-            <div className="space-y-2">
-              {conversations.map((conv) => (
-                <Card 
-                  key={conv.id} 
-                  className={`group p-3 hover:bg-accent cursor-pointer transition-colors relative ${
-                    activeConversation?.id === conv.id ? 'bg-accent border-simon-green' : ''
-                  }`}
-                  onClick={() => handleConversationClick(conv)}
-                >
-                  <div className="flex items-start gap-2">
-                    <MessageSquare className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                    <p className="text-sm line-clamp-2 flex-1">{conv.title}</p>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={(e) => handleDeleteConversation(conv.id, e)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground absolute right-2 top-2"
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </Card>
-              ))}
+        <Sidebar className="w-80">
+          <SidebarContent>
+            {/* Header */}
+            <div className="p-4 border-b border-border">
+              <Link to="/" className="flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity">
+                <BarChart3 className="h-8 w-8 text-simon-green bg-slate-50" />
+                <h1 className="text-xl font-bold text-simon-blue">Simon</h1>
+              </Link>
+              <Button className="w-full" variant="simon" onClick={handleNewChat}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nieuwe chat
+              </Button>
             </div>
-          </ScrollArea>
-        </div>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-border">
-          <Button variant="ghost" size="sm" className="w-full justify-start">
-            <Settings className="h-4 w-4 mr-2" />
-            Instellingen
-          </Button>
-        </div>
-      </div>
+            {/* Conversations */}
+            <div className="flex-1 p-4">
+              <div className="mb-4">
+                <h2 className="text-sm font-medium text-muted-foreground mb-2">Je gesprekken</h2>
+              </div>
+              
+              <ScrollArea className="h-full">
+                <div className="space-y-2">
+                  {conversations.map((conv) => (
+                    <Card 
+                      key={conv.id} 
+                      className={`group p-3 hover:bg-accent cursor-pointer transition-colors relative ${
+                        activeConversation?.id === conv.id ? 'bg-accent border-simon-green' : ''
+                      }`}
+                      onClick={() => handleConversationClick(conv)}
+                    >
+                      <div className="flex items-start gap-2">
+                        <MessageSquare className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                        <p className="text-sm line-clamp-2 flex-1">{conv.title}</p>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => handleDeleteConversation(conv.id, e)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground absolute right-2 top-2"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-border">
+              <Button variant="ghost" size="sm" className="w-full justify-start">
+                <Settings className="h-4 w-4 mr-2" />
+                Instellingen
+              </Button>
+            </div>
+          </SidebarContent>
+        </Sidebar>
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
@@ -445,6 +444,7 @@ const Chat = () => {
                 <p className="text-sm text-muted-foreground">{activeConversation?.title || "Verzekering Matching Assistent"}</p>
               </div>
             </div>
+            <ProfileDropdown />
           </div>
         </div>
 
