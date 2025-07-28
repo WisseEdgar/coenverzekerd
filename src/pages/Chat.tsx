@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { SidebarProvider, SidebarTrigger, Sidebar, SidebarContent, useSidebar } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger, Sidebar, SidebarContent } from "@/components/ui/sidebar";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
@@ -369,367 +369,23 @@ const Chat = () => {
 
   return (
     <SidebarProvider>
-      <ChatContent />
-    </SidebarProvider>
-  );
-};
-
-const ChatContent = () => {
-  const { state } = useSidebar();
-  const isCollapsed = state === "collapsed";
-  
-  const [message, setMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [user, setUser] = useState<any>(null);
-  const [selectedClient, setSelectedClient] = useState<ClientProfile | null>(null);
-  const [showIntake, setShowIntake] = useState(false);
-  const [intakeData, setIntakeData] = useState<any>(null);
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
-  const { toast } = useToast();
-
-  // Check auth and load conversations on mount
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      setUser(user);
-      await loadConversations();
-    } else {
-      // Redirect to auth if not authenticated
-      window.location.href = '/auth';
-    }
-  };
-
-  const loadConversations = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('conversations')
-        .select('*')
-        .order('updated_at', { ascending: false });
-
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        setConversations(data);
-        // Load the most recent conversation by default
-        await loadConversation(data[0]);
-      } else {
-        // Create first conversation if none exist
-        await handleNewChat();
-      }
-    } catch (error) {
-      console.error('Error loading conversations:', error);
-      toast({
-        title: "Fout bij laden gesprekken",
-        description: "Er is iets misgegaan bij het laden van je gesprekken.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const loadConversation = async (conversation: Conversation) => {
-    try {
-      setActiveConversation(conversation);
-      
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('conversation_id', conversation.id)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-
-      if (data && data.length === 0) {
-        // Add welcome message if conversation is empty
-        await addWelcomeMessage(conversation.id);
-      } else {
-        setMessages((data || []) as Message[]);
-      }
-    } catch (error) {
-      console.error('Error loading conversation:', error);
-      toast({
-        title: "Fout bij laden gesprek",
-        description: "Er is iets misgegaan bij het laden van dit gesprek.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const addWelcomeMessage = async (conversationId: string) => {
-    let welcomeContent = "Hallo! Ik ben Simon A.I+, je persoonlijke verzekering matching assistent.";
-    
-    if (selectedClient) {
-      const clientName = selectedClient.client_type === 'private' 
-        ? selectedClient.full_name 
-        : selectedClient.company_name;
-      welcomeContent += ` Ik zie dat we spreken over ${clientName}. Ik heb toegang tot hun profiel en kan gepersonaliseerd advies geven.`;
-    } else {
-      welcomeContent += " Beschrijf de situatie van je klant en ik help je de beste verzekeringopties te vinden.";
-    }
-    
-    welcomeContent += " Wat kan ik voor je doen?";
-    
-    try {
-      const { data, error } = await supabase
-        .from('messages')
-        .insert({
-          conversation_id: conversationId,
-          role: 'assistant',
-          content: welcomeContent
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      if (data) {
-        setMessages([data as Message]);
-      }
-    } catch (error) {
-      console.error('Error adding welcome message:', error);
-    }
-  };
-
-  const generateConversationTitle = (firstMessage: string) => {
-    return firstMessage.length > 40 ? firstMessage.substring(0, 40) + "..." : firstMessage;
-  };
-
-  const handleNewChat = async () => {
-    try {
-      // Reset client selection and intake data
-      setSelectedClient(null);
-      setIntakeData(null);
-      setShowIntake(false);
-      
-      const { data, error } = await supabase
-        .from('conversations')
-        .insert({
-          user_id: user.id,
-          title: "Nieuwe chat"
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      if (data) {
-        const newConversation = data;
-        setConversations(prev => [newConversation, ...prev]);
-        await loadConversation(newConversation);
-      }
-    } catch (error) {
-      console.error('Error creating new conversation:', error);
-      toast({
-        title: "Fout bij maken nieuwe chat",
-        description: "Er is iets misgegaan bij het maken van een nieuwe chat.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleClientSelect = (client: ClientProfile | null) => {
-    setSelectedClient(client);
-    setShowIntake(false);
-    setIntakeData(null);
-  };
-
-  const handleStartChat = () => {
-    if (!selectedClient && !intakeData) {
-      setShowIntake(true);
-    } else {
-      setShowIntake(false);
-    }
-  };
-
-  const handleIntakeComplete = (data: any) => {
-    setIntakeData(data);
-    setShowIntake(false);
-  };
-
-  const handleIntakeSkip = () => {
-    setShowIntake(false);
-  };
-
-  const handleSaveAsClient = async (data: any) => {
-    setIntakeData(data);
-    setShowSaveDialog(true);
-  };
-
-  const handleClientSaved = (clientId: string) => {
-    // Optionally load the saved client
-    toast({
-      title: "Klant opgeslagen",
-      description: "Het klantprofiel is succesvol aangemaakt"
-    });
-  };
-
-  const handleConversationClick = async (conversation: Conversation) => {
-    await loadConversation(conversation);
-  };
-
-  const handleDeleteConversation = async (conversationId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    
-    try {
-      const { error } = await supabase
-        .from('conversations')
-        .delete()
-        .eq('id', conversationId);
-
-      if (error) throw error;
-
-      // Update local state
-      setConversations(prev => prev.filter(conv => conv.id !== conversationId));
-      
-      // If deleted conversation was active, load another one or create new
-      if (activeConversation?.id === conversationId) {
-        const remainingConversations = conversations.filter(conv => conv.id !== conversationId);
-        if (remainingConversations.length > 0) {
-          await loadConversation(remainingConversations[0]);
-        } else {
-          await handleNewChat();
-        }
-      }
-    } catch (error) {
-      console.error('Error deleting conversation:', error);
-      toast({
-        title: "Fout bij verwijderen gesprek",
-        description: "Er is iets misgegaan bij het verwijderen van dit gesprek.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleSendMessage = async () => {
-    if (!message.trim() || isLoading || !activeConversation) return;
-
-    const userMessage = message.trim();
-    setMessage("");
-    setIsLoading(true);
-
-    try {
-      // Add user message to database
-      const { data: userMessageData, error: userError } = await supabase
-        .from('messages')
-        .insert({
-          conversation_id: activeConversation.id,
-          role: 'user',
-          content: userMessage
-        })
-        .select()
-        .single();
-
-      if (userError) throw userError;
-
-      // Update local messages
-      const updatedMessages = [...messages, userMessageData as Message];
-      setMessages(updatedMessages);
-
-      // Update conversation title if this is the first user message
-      const userMessages = updatedMessages.filter(msg => msg.role === 'user');
-      if (userMessages.length === 1) {
-        const newTitle = generateConversationTitle(userMessage);
-        
-        const { error: titleError } = await supabase
-          .from('conversations')
-          .update({ title: newTitle })
-          .eq('id', activeConversation.id);
-
-        if (!titleError) {
-          setActiveConversation(prev => prev ? { ...prev, title: newTitle } : null);
-          setConversations(prev => prev.map(conv => 
-            conv.id === activeConversation.id ? { ...conv, title: newTitle } : conv
-          ));
-        }
-      }
-
-      // Prepare conversation history for API (exclude welcome messages)
-      const conversationHistory = updatedMessages
-        .filter(msg => !(msg.role === "assistant" && msg.content.includes("Hallo! Ik ben Simon A.I+")))
-        .map(msg => ({
-          role: msg.role,
-          content: msg.content
-        }));
-
-      // Call Simon AI with client context
-      const { data: aiData, error: aiError } = await supabase.functions.invoke('simon-chat', {
-        body: {
-          message: userMessage,
-          conversationHistory: conversationHistory,
-          clientProfile: selectedClient,
-          intakeData: intakeData
-        }
-      });
-
-      if (aiError) throw aiError;
-
-      // Add AI response to database
-      const { data: aiMessageData, error: aiMessageError } = await supabase
-        .from('messages')
-        .insert({
-          conversation_id: activeConversation.id,
-          role: 'assistant',
-          content: aiData.response
-        })
-        .select()
-        .single();
-
-      if (aiMessageError) throw aiMessageError;
-
-      // Update local messages
-      setMessages(prev => [...prev, aiMessageData as Message]);
-
-    } catch (error) {
-      console.error('Chat error:', error);
-      toast({
-        title: "Er is iets misgegaan",
-        description: "Probeer het opnieuw. Als het probleem aanhoudt, neem contact op met support.",
-        variant: "destructive",
-      });
-      
-      // Remove failed user message if it was added
-      setMessages(prev => prev.filter(msg => msg.content !== userMessage || msg.role !== 'user'));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (!user) {
-    return <div className="flex items-center justify-center h-screen">Laden...</div>;
-  }
-
-  return (
-    <div className="min-h-screen flex w-full bg-background">
-      {/* Sidebar */}
-      <Sidebar collapsible="icon" className={isCollapsed ? "w-16" : "w-80"}>
-        <SidebarContent>
-          {/* Header */}
-          <div className={`p-4 border-b border-border ${isCollapsed ? 'px-2' : ''}`}>
-            {!isCollapsed && (
+      <div className="min-h-screen flex w-full bg-background">
+        {/* Sidebar */}
+        <Sidebar collapsible="icon">
+          <SidebarContent>
+            {/* Header */}
+            <div className="p-4 border-b border-border">
               <Link to="/" className="flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity">
                 <BarChart3 className="h-8 w-8 text-simon-green bg-slate-50" />
                 <span className="text-xl font-bold text-simon-blue">Simon</span>
               </Link>
-            )}
-            <Button 
-              className={`${isCollapsed ? 'w-10 h-10 p-0' : 'w-full'}`} 
-              variant="simon" 
-              onClick={handleNewChat}
-              title={isCollapsed ? "Nieuwe chat" : undefined}
-            >
-              <Plus className="h-4 w-4" />
-              {!isCollapsed && <span className="ml-2">Nieuwe chat</span>}
-            </Button>
-          </div>
+              <Button className="w-full" variant="simon" onClick={handleNewChat}>
+                <Plus className="h-4 w-4 mr-2" />
+                <span>Nieuwe chat</span>
+              </Button>
+            </div>
 
-          {/* Conversations */}
-          {!isCollapsed && (
+            {/* Conversations */}
             <div className="flex-1 p-4">
               <div className="mb-4">
                 <h2 className="text-sm font-medium text-muted-foreground mb-2">Je gesprekken</h2>
@@ -762,49 +418,19 @@ const ChatContent = () => {
                 </div>
               </ScrollArea>
             </div>
-          )}
 
-          {/* Collapsed conversations - show icons only */}
-          {isCollapsed && (
-            <div className="flex-1 p-2">
-              <ScrollArea className="h-full">
-                <div className="space-y-2">
-                  {conversations.slice(0, 10).map((conv) => (
-                    <Button
-                      key={conv.id}
-                      variant="ghost"
-                      size="icon"
-                      className={`w-10 h-10 ${
-                        activeConversation?.id === conv.id ? 'bg-accent border border-simon-green' : ''
-                      }`}
-                      onClick={() => handleConversationClick(conv)}
-                      title={conv.title}
-                    >
-                      <MessageSquare className="h-4 w-4" />
-                    </Button>
-                  ))}
-                </div>
-              </ScrollArea>
+            {/* Footer */}
+            <div className="p-4 border-t border-border">
+              <Button variant="ghost" size="sm" className="w-full justify-start">
+                <Settings className="h-4 w-4 mr-2" />
+                <span>Instellingen</span>
+              </Button>
             </div>
-          )}
+          </SidebarContent>
+        </Sidebar>
 
-          {/* Footer */}
-          <div className={`p-4 border-t border-border ${isCollapsed ? 'px-2' : ''}`}>
-            <Button 
-              variant="ghost" 
-              size={isCollapsed ? "icon" : "sm"} 
-              className={`${isCollapsed ? 'w-10 h-10' : 'w-full justify-start'}`}
-              title={isCollapsed ? "Instellingen" : undefined}
-            >
-              <Settings className="h-4 w-4" />
-              {!isCollapsed && <span className="ml-2">Instellingen</span>}
-            </Button>
-          </div>
-        </SidebarContent>
-      </Sidebar>
-
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col h-screen">
+        {/* Main Chat Area */}
+        <div className="flex-1 flex flex-col h-screen">
         {/* Chat Header */}
         <div className="p-4 border-b border-border bg-card">
           <div className="flex items-center justify-between">
@@ -941,7 +567,8 @@ const ChatContent = () => {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </SidebarProvider>
   );
 };
 
