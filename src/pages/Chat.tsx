@@ -369,19 +369,19 @@ const Chat = () => {
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen bg-background w-full">
+      <div className="min-h-screen flex w-full bg-background">
         {/* Sidebar */}
-        <Sidebar className="w-80">
+        <Sidebar collapsible="icon">
           <SidebarContent>
             {/* Header */}
             <div className="p-4 border-b border-border">
               <Link to="/" className="flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity">
                 <BarChart3 className="h-8 w-8 text-simon-green bg-slate-50" />
-                <h1 className="text-xl font-bold text-simon-blue">Simon</h1>
+                <span className="text-xl font-bold text-simon-blue">Simon</span>
               </Link>
               <Button className="w-full" variant="simon" onClick={handleNewChat}>
                 <Plus className="h-4 w-4 mr-2" />
-                Nieuwe chat
+                <span>Nieuwe chat</span>
               </Button>
             </div>
 
@@ -423,14 +423,14 @@ const Chat = () => {
             <div className="p-4 border-t border-border">
               <Button variant="ghost" size="sm" className="w-full justify-start">
                 <Settings className="h-4 w-4 mr-2" />
-                Instellingen
+                <span>Instellingen</span>
               </Button>
             </div>
           </SidebarContent>
         </Sidebar>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+        {/* Main Chat Area */}
+        <div className="flex-1 flex flex-col h-screen">
         {/* Chat Header */}
         <div className="p-4 border-b border-border bg-card">
           <div className="flex items-center justify-between">
