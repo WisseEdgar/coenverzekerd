@@ -405,10 +405,10 @@ const Chat = () => {
             {/* Client Selector */}
             <div className="p-4 border-b border-border bg-card">
               <ClientSelector selectedClient={selectedClient} onClientSelect={handleClientSelect} />
-              {!selectedClient && !intakeData && <Button onClick={handleStartChat} variant="outline" className="w-full mt-4">
+              {!selectedClient && !intakeData && <Button onClick={handleStartChat} variant="outline" className="w-full mt-2">
                   Start Gesprek (met intake)
                 </Button>}
-              {!selectedClient && !intakeData && messages.length > 0 && <div className="flex gap-2 mt-4">
+              {!selectedClient && !intakeData && messages.length > 0 && <div className="flex gap-2 mt-2">
                   <Button onClick={() => setShowSaveDialog(true)} variant="outline" size="sm" className="flex-1">
                     <Save className="mr-2 h-4 w-4" />
                     Opslaan als Klant
