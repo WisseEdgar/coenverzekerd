@@ -2,9 +2,12 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { BarChart3, Menu, X } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { ProfileDropdown } from "./ProfileDropdown";
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const { user, loading, signOut } = useAuth();
   const navigation = [{
     name: "Features",
     href: "/features"
@@ -32,18 +35,26 @@ export const Header = () => {
               </Link>)}
           </nav>
 
-          {/* Auth Buttons */}
+          {/* Auth Section */}
           <div className="hidden md:flex items-center space-x-4">
-            <Link to="/auth">
-              <Button variant="ghost" size="sm">
-                Login
-              </Button>
-            </Link>
-            <Link to="/auth">
-              <Button variant="simon" size="sm">
-                Get Started
-              </Button>
-            </Link>
+            {loading ? (
+              <div className="w-8 h-8 animate-pulse bg-muted rounded-full" />
+            ) : user ? (
+              <ProfileDropdown />
+            ) : (
+              <>
+                <Link to="/auth">
+                  <Button variant="ghost" size="sm">
+                    Login
+                  </Button>
+                </Link>
+                <Link to="/auth">
+                  <Button variant="simon" size="sm">
+                    Get Started
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -61,16 +72,39 @@ export const Header = () => {
                   {item.name}
                 </Link>)}
               <div className="flex flex-col space-y-2 pt-4">
-                <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
-                  <Button variant="ghost" size="sm" className="w-full">
-                    Login
-                  </Button>
-                </Link>
-                <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
-                  <Button variant="simon" size="sm" className="w-full">
-                    Get Started
-                  </Button>
-                </Link>
+                {user ? (
+                  <>
+                    <Link to="/dashboard" onClick={() => setIsMenuOpen(false)}>
+                      <Button variant="ghost" size="sm" className="w-full">
+                        Dashboard
+                      </Button>
+                    </Link>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full" 
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        signOut();
+                      }}
+                    >
+                      Uitloggen
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
+                      <Button variant="ghost" size="sm" className="w-full">
+                        Login
+                      </Button>
+                    </Link>
+                    <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
+                      <Button variant="simon" size="sm" className="w-full">
+                        Get Started
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </div>}
