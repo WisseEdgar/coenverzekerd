@@ -403,9 +403,9 @@ const Chat = () => {
             <IntakeQuestionnaire onComplete={handleIntakeComplete} onSkip={handleIntakeSkip} onSaveAsClient={handleSaveAsClient} />
           </div> : <>
             {/* Client Selector */}
-            <div className="p-4 border-b border-border bg-card space-y-4">
+            <div className="p-4 border-b border-border bg-card">
               <ClientSelector selectedClient={selectedClient} onClientSelect={handleClientSelect} />
-              {!selectedClient && !intakeData && <Button onClick={handleStartChat} variant="outline" className="w-full">
+              {!selectedClient && !intakeData && <Button onClick={handleStartChat} variant="outline" className="w-full mb-4">
                   Start Gesprek (met intake)
                 </Button>}
               {!selectedClient && !intakeData && messages.length > 0 && <div className="flex gap-2">
