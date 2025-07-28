@@ -137,10 +137,6 @@ const Dashboard = () => {
                           <Users className="h-6 w-6" />
                           Klant Toevoegen
                         </Button>
-                        <Button variant="simon-light" className="h-20 flex-col gap-2">
-                          <FileText className="h-6 w-6" />
-                          Documenten Uploaden
-                        </Button>
                       </div>
                     </CardContent>
                   </Card>
