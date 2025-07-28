@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
@@ -367,8 +368,9 @@ const Chat = () => {
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      {/* Sidebar */}
+    <SidebarProvider>
+      <div className="flex h-screen bg-background w-full">
+        {/* Sidebar */}
       <div className="w-80 bg-card border-r border-border flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-border">
@@ -432,13 +434,16 @@ const Chat = () => {
       <div className="flex-1 flex flex-col">
         {/* Chat Header */}
         <div className="p-4 border-b border-border bg-card">
-          <div className="flex items-center gap-2">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-simon-green text-white">SA</AvatarFallback>
-            </Avatar>
-            <div>
-              <h2 className="font-semibold">Simon A.I+</h2>
-              <p className="text-sm text-muted-foreground">{activeConversation?.title || "Verzekering Matching Assistent"}</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <SidebarTrigger className="mr-2" />
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="bg-simon-green text-white">SA</AvatarFallback>
+              </Avatar>
+              <div>
+                <h2 className="font-semibold">Simon A.I+</h2>
+                <p className="text-sm text-muted-foreground">{activeConversation?.title || "Verzekering Matching Assistent"}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -562,7 +567,8 @@ const Chat = () => {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </SidebarProvider>
   );
 };
 
