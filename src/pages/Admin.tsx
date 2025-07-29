@@ -5,7 +5,8 @@ import { InsuranceTypesManager } from '@/components/admin/InsuranceTypesManager'
 import { InsuranceCompaniesManager } from '@/components/admin/InsuranceCompaniesManager';
 import { DocumentReassignmentManager } from '@/components/admin/DocumentReassignmentManager';
 import { AuditLogViewer } from '@/components/admin/AuditLogViewer';
-import { Settings, FileText, Building, RotateCcw, Shield } from 'lucide-react';
+import { MessageFeedbackViewer } from '@/components/admin/MessageFeedbackViewer';
+import { Settings, FileText, Building, RotateCcw, Shield, MessageSquare } from 'lucide-react';
 
 export default function Admin() {
   return (
@@ -22,7 +23,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="types" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="types" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Verzekeringtypes
@@ -38,6 +39,10 @@ export default function Admin() {
             <TabsTrigger value="audit" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
               Audit Log
+            </TabsTrigger>
+            <TabsTrigger value="feedback" className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Message Feedback
             </TabsTrigger>
           </TabsList>
           
@@ -55,6 +60,10 @@ export default function Admin() {
           
           <TabsContent value="audit" className="space-y-6">
             <AuditLogViewer />
+          </TabsContent>
+          
+          <TabsContent value="feedback" className="space-y-6">
+            <MessageFeedbackViewer />
           </TabsContent>
         </Tabs>
       </div>
