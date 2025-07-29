@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import ClientSelector from "@/components/chat/ClientSelector";
 import IntakeQuestionnaire from "@/components/chat/IntakeQuestionnaire";
 import SaveClientDialog from "@/components/chat/SaveClientDialog";
+import MessageFeedback from "@/components/chat/MessageFeedback";
 import { ProfileDropdown } from "@/components/layout/ProfileDropdown";
 interface Message {
   id: string;
@@ -419,17 +420,22 @@ const Chat = () => {
             {/* Messages */}
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-6 max-w-4xl">
-                {messages.map(msg => <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    {msg.role === 'assistant' && <Avatar className="h-8 w-8 mt-1">
-                        <AvatarFallback className="bg-simon-green text-white text-xs">SA</AvatarFallback>
-                      </Avatar>}
-                    <Card className={`p-4 max-w-2xl ${msg.role === 'user' ? 'bg-simon-green text-white' : 'bg-muted'}`}>
-                      <p className="whitespace-pre-line text-sm font-medium">{msg.content}</p>
-                    </Card>
-                    {msg.role === 'user' && <Avatar className="h-8 w-8 mt-1">
-                        <AvatarFallback>VB</AvatarFallback>
-                      </Avatar>}
-                  </div>)}
+                 {messages.map(msg => <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                     {msg.role === 'assistant' && <Avatar className="h-8 w-8 mt-1">
+                         <AvatarFallback className="bg-simon-green text-white text-xs">SA</AvatarFallback>
+                       </Avatar>}
+                     <div className="flex flex-col max-w-2xl">
+                       <Card className={`p-4 ${msg.role === 'user' ? 'bg-simon-green text-white' : 'bg-muted'}`}>
+                         <p className="whitespace-pre-line text-sm font-medium">{msg.content}</p>
+                       </Card>
+                       {msg.role === 'assistant' && (
+                         <MessageFeedback messageId={msg.id} className="mt-2 ml-2" />
+                       )}
+                     </div>
+                     {msg.role === 'user' && <Avatar className="h-8 w-8 mt-1">
+                         <AvatarFallback>VB</AvatarFallback>
+                       </Avatar>}
+                   </div>)}
                 {isLoading && <div className="flex gap-3 justify-start">
                     <Avatar className="h-8 w-8 mt-1">
                       <AvatarFallback className="bg-simon-green text-white text-xs">SA</AvatarFallback>
