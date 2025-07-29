@@ -37,8 +37,11 @@ export const MessageFeedbackViewer: React.FC = () => {
         .from('message_feedback')
         .select(`
           *,
-          messages!inner(content, conversation_id),
-          messages!inner(conversations!inner(title))
+          messages(
+            content,
+            conversation_id,
+            conversations(title)
+          )
         `)
         .order('created_at', { ascending: false });
 
