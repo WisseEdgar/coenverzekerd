@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -144,9 +145,11 @@ const Features = () => {
                   <p className="text-lg text-muted-foreground leading-relaxed">
                     {feature.description}
                   </p>
-                  <Button className="bg-simon-green hover:bg-simon-green-dark group">
-                    Probeer Nu
-                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  <Button asChild className="bg-simon-green hover:bg-simon-green-dark group">
+                    <Link to="/pricing">
+                      Probeer Nu
+                      <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    </Link>
                   </Button>
                 </div>
 
@@ -169,8 +172,10 @@ const Features = () => {
             Start vandaag nog met een gratis proefperiode en ervaar hoe AI je adviesproces kan verbeteren.
           </p>
           <div className="flex justify-center">
-            <Button size="lg" className="bg-simon-green hover:bg-simon-green-dark">
-              Start vandaag nog
+            <Button asChild size="lg" className="bg-simon-green hover:bg-simon-green-dark">
+              <Link to="/pricing">
+                Start vandaag nog
+              </Link>
             </Button>
           </div>
         </div>
