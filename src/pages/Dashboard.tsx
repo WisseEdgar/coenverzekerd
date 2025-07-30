@@ -2,7 +2,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Search, FileText, TrendingUp } from "lucide-react";
+import { Users, Search, FileText } from "lucide-react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import Chat from "./Chat";
 import Documents from "./Documents";
@@ -95,21 +95,6 @@ const Dashboard = () => {
                         <div className="text-2xl font-bold text-simon-blue">1,248</div>
                         <p className="text-xs text-muted-foreground">
                           In database beschikbaar
-                        </p>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="shadow-card hover:shadow-card-hover transition-shadow">
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Succes Percentage
-                        </CardTitle>
-                        <TrendingUp className="h-4 w-4 text-simon-green" />
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold text-simon-blue">94%</div>
-                        <p className="text-xs text-muted-foreground">
-                          Gemiddelde match score
                         </p>
                       </CardContent>
                     </Card>
