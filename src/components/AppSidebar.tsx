@@ -14,10 +14,6 @@ const mainItems = [{
   title: "Klanten",
   url: "/dashboard/clients",
   icon: Users
-}, {
-  title: "Resultaten",
-  url: "/dashboard/results",
-  icon: BarChart3
 }];
 const toolsItems = [{
   title: "AI Chat",
