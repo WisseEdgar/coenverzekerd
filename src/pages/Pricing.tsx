@@ -81,7 +81,7 @@ const Pricing = () => {
               className={`relative ${plan.highlighted ? 'border-simon-green shadow-lg scale-105' : ''}`}
             >
               {plan.badge && (
-                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-simon-green text-white px-3 py-1 rounded-full text-sm font-medium">
+                <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-simon-green text-white px-2 py-0.5 rounded-full text-xs font-medium shadow-sm">
                   {plan.badge}
                 </div>
               )}
