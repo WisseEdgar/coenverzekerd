@@ -9,6 +9,7 @@ import Chat from "./Chat";
 import Documents from "./Documents";
 import Admin from "./Admin";
 import Clients from "./Clients";
+import Settings from "./Settings";
 import { ProfileDropdown } from "@/components/layout/ProfileDropdown";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -133,6 +134,7 @@ const Dashboard = () => {
               <Route path="/admin" element={<Admin />} />
               <Route path="/documents" element={<Documents />} />
               <Route path="/clients" element={<Clients />} />
+              <Route path="/settings" element={<Settings />} />
               <Route path="/" element={
                 <div className="max-w-7xl mx-auto space-y-6">
                   {/* Welcome Section */}
