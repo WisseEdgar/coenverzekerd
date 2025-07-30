@@ -14,6 +14,7 @@ import IntakeQuestionnaire from "@/components/chat/IntakeQuestionnaire";
 import SaveClientDialog from "@/components/chat/SaveClientDialog";
 import MessageFeedback from "@/components/chat/MessageFeedback";
 import { ProfileDropdown } from "@/components/layout/ProfileDropdown";
+import ReactMarkdown from 'react-markdown';
 interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -425,9 +426,15 @@ const Chat = () => {
                          <AvatarFallback className="bg-simon-green text-white text-xs">SA</AvatarFallback>
                        </Avatar>}
                      <div className="flex flex-col max-w-2xl">
-                       <Card className={`p-4 ${msg.role === 'user' ? 'bg-simon-green text-white' : 'bg-muted'}`}>
-                         <p className="whitespace-pre-line text-sm font-medium">{msg.content}</p>
-                       </Card>
+                        <Card className={`p-4 ${msg.role === 'user' ? 'bg-simon-green text-white' : 'bg-muted'}`}>
+                          {msg.role === 'assistant' ? (
+                            <div className="text-sm font-medium prose prose-sm max-w-none prose-headings:font-semibold prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground">
+                              <ReactMarkdown>{msg.content}</ReactMarkdown>
+                            </div>
+                          ) : (
+                            <p className="whitespace-pre-line text-sm font-medium">{msg.content}</p>
+                          )}
+                        </Card>
                        {msg.role === 'assistant' && (
                          <MessageFeedback messageId={msg.id} className="mt-2 ml-2" />
                        )}
