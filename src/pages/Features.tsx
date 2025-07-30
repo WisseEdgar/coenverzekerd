@@ -168,12 +168,9 @@ const Features = () => {
           <p className="text-lg text-muted-foreground mb-8">
             Start vandaag nog met een gratis proefperiode en ervaar hoe AI je adviesproces kan verbeteren.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex justify-center">
             <Button size="lg" className="bg-simon-green hover:bg-simon-green-dark">
               Start vandaag nog
-            </Button>
-            <Button size="lg" variant="outline">
-              Plan een Demo
             </Button>
           </div>
         </div>
