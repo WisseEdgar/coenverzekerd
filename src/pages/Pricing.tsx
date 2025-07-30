@@ -6,56 +6,62 @@ import { Check } from "lucide-react";
 const Pricing = () => {
   const plans = [
     {
-      name: "Free",
-      price: "$0",
-      period: "/month",
-      description: "For all kind of users",
+      name: "Starter",
+      price: "€79",
+      period: "/maand",
+      description: "Perfect voor zelfstandig adviseurs",
       features: [
-        "Limited access to AI Excel Bot",
-        "Basic features",
-        "Generation and explanation per month",
-        "Access to our Chrome Extension",
-        "Formula",
-        "Text support"
+        "Tot 50 AI gesprekken per maand",
+        "Basis verzekering database toegang",
+        "Email ondersteuning",
+        "Standaard polisanalyse",
+        "Client profiel opslag",
+        "Basis rapportage",
+        "1 gebruiker account"
       ],
-      buttonText: "Get Started",
+      buttonText: "Start Nu",
       buttonVariant: "outline" as const
     },
     {
-      name: "Pro",
-      price: "$5.99",
-      period: "/month",
-      description: "Best choice for first 2ks first",
+      name: "Professional",
+      price: "€149",
+      period: "/maand",
+      description: "Ideaal voor groeiende makelaarskantoren",
       features: [
-        "Access to our Chrome Extension",
-        "Access to our Excel web in unlimited Formula generation per month",
-        "Unlimited Formula explanation per month",
-        "Unlimited VBA code generations per month",
-        "Unlimited VBA code explanations per month",
-        "Text support",
-        "Priority support"
+        "Onbeperkte AI gesprekken",
+        "Volledige verzekering database",
+        "Prioriteit ondersteuning",
+        "Geavanceerde polisanalyse",
+        "Onbeperkte client profielen",
+        "Uitgebreide rapportage & analytics",
+        "Tot 5 gebruikers",
+        "Integratie met bestaande systemen",
+        "Custom branded interface"
       ],
-      buttonText: "Get Started",
-      buttonVariant: "outline" as const
-    },
-    {
-      name: "Pro Annual",
-      price: "$49.99",
-      period: "/year",
-      description: "Yearly subscription Annual plan",
-      features: [
-        "Access to our Chrome Extension",
-        "Access to our Excel web in unlimited Formula generation per month",
-        "Unlimited Formula explanation per month",
-        "Unlimited VBA code generations per month",
-        "Unlimited VBA code explanations per month",
-        "Text support",
-        "Priority support"
-      ],
-      buttonText: "Get Started",
+      buttonText: "Start Nu",
       buttonVariant: "simon" as const,
-      badge: "BEST VALUE",
+      badge: "MEEST POPULAIR",
       highlighted: true
+    },
+    {
+      name: "Enterprise",
+      price: "€299",
+      period: "/maand",
+      description: "Voor grote verzekeringskantoren",
+      features: [
+        "Alles van Professional",
+        "Onbeperkte gebruikers",
+        "Dedicated account manager",
+        "24/7 telefonische ondersteuning",
+        "Custom AI training op uw data",
+        "API toegang voor integraties",
+        "Advanced compliance tools",
+        "Maandelijkse strategiesessies",
+        "White-label oplossing",
+        "SLA garanties"
+      ],
+      buttonText: "Contact Ons",
+      buttonVariant: "outline" as const
     }
   ];
 
@@ -64,8 +70,8 @@ const Pricing = () => {
       <Header />
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">Simple Pricing</h1>
-          <p className="text-muted-foreground">For all kind of users</p>
+          <h1 className="text-4xl font-bold mb-4">Eenvoudige Prijzen</h1>
+          <p className="text-muted-foreground">Kies het plan dat bij uw kantoor past</p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-16">
@@ -110,9 +116,12 @@ const Pricing = () => {
         </div>
 
         <div className="bg-simon-green-light/20 rounded-lg p-8 text-center">
-          <h2 className="text-2xl font-bold mb-4">Access the power of AI</h2>
+          <h2 className="text-2xl font-bold mb-4">Ervaar de kracht van AI voor verzekeringen</h2>
+          <p className="text-muted-foreground mb-6">
+            Start vandaag nog met een gratis proefperiode van 14 dagen
+          </p>
           <Button variant="simon" size="lg">
-            Get Started
+            Start Gratis Proef
           </Button>
         </div>
       </div>
