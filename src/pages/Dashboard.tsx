@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Button } from "@/components/ui/button";
@@ -9,10 +10,102 @@ import Documents from "./Documents";
 import Admin from "./Admin";
 import Clients from "./Clients";
 import { ProfileDropdown } from "@/components/layout/ProfileDropdown";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+
+interface RecentActivity {
+  id: string;
+  title: string;
+  content: string;
+  timestamp: string;
+  insuranceType?: string;
+}
 
 const Dashboard = () => {
   const location = useLocation();
   const isChatRoute = location.pathname === "/dashboard/chat";
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
+  const { toast } = useToast();
+
+  // Fetch recent chat activities
+  useEffect(() => {
+    const fetchRecentActivities = async () => {
+      try {
+        const { data: user } = await supabase.auth.getUser();
+        if (!user.user) return;
+
+        // Get the last 3 conversations with their latest messages
+        const { data: conversations, error } = await supabase
+          .from('conversations')
+          .select(`
+            id,
+            title,
+            updated_at,
+            messages (
+              id,
+              content,
+              role,
+              created_at
+            )
+          `)
+          .eq('user_id', user.user.id)
+          .order('updated_at', { ascending: false })
+          .limit(3);
+
+        if (error) {
+          console.error('Error fetching recent activities:', error);
+          return;
+        }
+
+        const activities: RecentActivity[] = conversations?.map(conv => {
+          // Get the first user message to extract insurance context
+          const userMessages = conv.messages?.filter(m => m.role === 'user') || [];
+          const firstUserMessage = userMessages[0]?.content || '';
+          
+          // Simple pattern matching for insurance types
+          const insuranceTypes = [
+            'autoverzekering', 'auto verzekering', 'auto',
+            'woonhuis', 'woonhuisverzekering', 'huis',
+            'zorgverzekering', 'zorg', 'gezondheid',
+            'aansprakelijkheid', 'AVP', 'WA',
+            'bedrijfsverzekering', 'bedrijf',
+            'rechtsbijstand',
+            'reisverzekering', 'reis'
+          ];
+          
+          let detectedType = '';
+          for (const type of insuranceTypes) {
+            if (firstUserMessage.toLowerCase().includes(type)) {
+              detectedType = type.charAt(0).toUpperCase() + type.slice(1);
+              break;
+            }
+          }
+          
+          // Format timestamp
+          const timeAgo = new Date(conv.updated_at).toLocaleString('nl-NL', {
+            day: 'numeric',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+
+          return {
+            id: conv.id,
+            title: conv.title,
+            content: detectedType ? `${detectedType} gesprek` : 'AI gesprek',
+            timestamp: timeAgo,
+            insuranceType: detectedType
+          };
+        }) || [];
+
+        setRecentActivities(activities);
+      } catch (error) {
+        console.error('Error fetching recent activities:', error);
+      }
+    };
+
+    fetchRecentActivities();
+  }, []);
 
   // If it's the chat route, render the full-screen chat without sidebar layout
   if (isChatRoute) {
@@ -137,27 +230,35 @@ const Dashboard = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        <div className="flex items-center gap-4 p-4 bg-simon-green-light rounded-lg">
-                          <div className="w-2 h-2 bg-simon-green rounded-full"></div>
-                          <div className="flex-1">
-                            <p className="font-medium">Perfecte match gevonden voor Jan de Vries</p>
-                            <p className="text-sm text-muted-foreground">Autoverzekering - 96% match - 5 min geleden</p>
+                        {recentActivities.length > 0 ? (
+                          recentActivities.map((activity, index) => (
+                            <div 
+                              key={activity.id} 
+                              className={`flex items-center gap-4 p-4 rounded-lg cursor-pointer transition-colors ${
+                                index === 0 ? 'bg-simon-green-light hover:bg-simon-green-light/80' : 'bg-muted hover:bg-muted/80'
+                              }`}
+                              onClick={() => window.location.href = '/dashboard/chat'}
+                            >
+                              <div className={`w-2 h-2 rounded-full ${
+                                index === 0 ? 'bg-simon-green' : 'bg-muted-foreground'
+                              }`}></div>
+                              <div className="flex-1">
+                                <p className="font-medium">{activity.title}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {activity.content} - {activity.timestamp}
+                                </p>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
+                            <div className="w-2 h-2 bg-muted-foreground rounded-full"></div>
+                            <div className="flex-1">
+                              <p className="font-medium">Nog geen gesprekken</p>
+                              <p className="text-sm text-muted-foreground">Start je eerste AI gesprek</p>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
-                          <div className="w-2 h-2 bg-muted-foreground rounded-full"></div>
-                          <div className="flex-1">
-                            <p className="font-medium">Nieuwe documenten toegevoegd</p>
-                            <p className="text-sm text-muted-foreground">Allianz polisvoorwaarden - 15 min geleden</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
-                          <div className="w-2 h-2 bg-muted-foreground rounded-full"></div>
-                          <div className="flex-1">
-                            <p className="font-medium">Klant profiel bijgewerkt</p>
-                            <p className="text-sm text-muted-foreground">Maria Jansen - 1 uur geleden</p>
-                          </div>
-                        </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
