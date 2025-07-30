@@ -60,7 +60,7 @@ const Pricing = () => {
         "White-label oplossing",
         "SLA garanties"
       ],
-      buttonText: "Contact Ons",
+      buttonText: "Neem contact op",
       buttonVariant: "outline" as const
     }
   ];
