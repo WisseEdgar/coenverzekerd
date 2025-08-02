@@ -24,13 +24,14 @@ const Dashboard = () => {
   const location = useLocation();
   const isChatRoute = location.pathname === "/dashboard/chat";
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
+  const [clientStats, setClientStats] = useState({ total: 0, weeklyChange: 0 });
   const {
     toast
   } = useToast();
 
-  // Fetch recent chat activities
+  // Fetch recent chat activities and client stats
   useEffect(() => {
-    const fetchRecentActivities = async () => {
+    const fetchData = async () => {
       try {
         const {
           data: user
@@ -58,6 +59,37 @@ const Dashboard = () => {
           console.error('Error fetching recent activities:', error);
           return;
         }
+
+        // Fetch client statistics
+        const { data: allClients, error: clientError } = await supabase
+          .from('client_profiles')
+          .select('created_at')
+          .eq('advisor_id', user.user.id);
+
+        if (!clientError && allClients) {
+          const now = new Date();
+          const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+          const currentWeekClients = allClients.filter(client => 
+            new Date(client.created_at) >= oneWeekAgo
+          ).length;
+
+          const previousWeekClients = allClients.filter(client => {
+            const createdAt = new Date(client.created_at);
+            return createdAt >= twoWeeksAgo && createdAt < oneWeekAgo;
+          }).length;
+
+          const weeklyChange = previousWeekClients > 0 
+            ? Math.round(((currentWeekClients - previousWeekClients) / previousWeekClients) * 100)
+            : 0;
+
+          setClientStats({
+            total: allClients.length,
+            weeklyChange
+          });
+        }
+
         const activities: RecentActivity[] = conversations?.map(conv => {
           // Get the first user message to extract insurance context
           const userMessages = conv.messages?.filter(m => m.role === 'user') || [];
@@ -90,10 +122,10 @@ const Dashboard = () => {
         }) || [];
         setRecentActivities(activities);
       } catch (error) {
-        console.error('Error fetching recent activities:', error);
+        console.error('Error fetching data:', error);
       }
     };
-    fetchRecentActivities();
+    fetchData();
   }, []);
 
   // If it's the chat route, render the full-screen chat without sidebar layout
@@ -140,9 +172,9 @@ const Dashboard = () => {
                         <Users className="h-4 w-4 text-simon-green" />
                       </CardHeader>
                       <CardContent>
-                        <div className="text-2xl font-bold text-simon-blue">142</div>
+                        <div className="text-2xl font-bold text-simon-blue">{clientStats.total}</div>
                         <p className="text-xs text-muted-foreground">
-                          +12% t.o.v. vorige maand
+                          {clientStats.weeklyChange > 0 ? '+' : ''}{clientStats.weeklyChange}% t.o.v. vorige week
                         </p>
                       </CardContent>
                     </Card>
