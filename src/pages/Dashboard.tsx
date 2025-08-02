@@ -24,7 +24,10 @@ const Dashboard = () => {
   const location = useLocation();
   const isChatRoute = location.pathname === "/dashboard/chat";
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
-  const [clientStats, setClientStats] = useState({ total: 0, weeklyChange: 0 });
+  const [clientStats, setClientStats] = useState({
+    total: 0,
+    weeklyChange: 0
+  });
   const {
     toast
   } = useToast();
@@ -61,35 +64,25 @@ const Dashboard = () => {
         }
 
         // Fetch client statistics
-        const { data: allClients, error: clientError } = await supabase
-          .from('client_profiles')
-          .select('created_at')
-          .eq('advisor_id', user.user.id);
-
+        const {
+          data: allClients,
+          error: clientError
+        } = await supabase.from('client_profiles').select('created_at').eq('advisor_id', user.user.id);
         if (!clientError && allClients) {
           const now = new Date();
           const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
           const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, now.getDate());
-
-          const currentMonthClients = allClients.filter(client => 
-            new Date(client.created_at) >= oneMonthAgo
-          ).length;
-
+          const currentMonthClients = allClients.filter(client => new Date(client.created_at) >= oneMonthAgo).length;
           const previousMonthClients = allClients.filter(client => {
             const createdAt = new Date(client.created_at);
             return createdAt >= twoMonthsAgo && createdAt < oneMonthAgo;
           }).length;
-
-          const monthlyChange = previousMonthClients > 0 
-            ? Math.round(((currentMonthClients - previousMonthClients) / previousMonthClients) * 100)
-            : 0;
-
+          const monthlyChange = previousMonthClients > 0 ? Math.round((currentMonthClients - previousMonthClients) / previousMonthClients * 100) : 0;
           setClientStats({
             total: allClients.length,
             weeklyChange: monthlyChange
           });
         }
-
         const activities: RecentActivity[] = conversations?.map(conv => {
           // Get the first user message to extract insurance context
           const userMessages = conv.messages?.filter(m => m.role === 'user') || [];
@@ -173,9 +166,7 @@ const Dashboard = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold text-simon-blue">{clientStats.total}</div>
-                        <p className="text-xs text-muted-foreground">
-                          {clientStats.weeklyChange > 0 ? '+' : ''}{clientStats.weeklyChange}% t.o.v. vorige maand
-                        </p>
+                        
                       </CardContent>
                     </Card>
                     
@@ -188,9 +179,7 @@ const Dashboard = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold text-simon-blue">28</div>
-                        <p className="text-xs text-muted-foreground">
-                          +8 t.o.v. gisteren
-                        </p>
+                        
                       </CardContent>
                     </Card>
                     
@@ -203,9 +192,7 @@ const Dashboard = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold text-simon-blue">1,248</div>
-                        <p className="text-xs text-muted-foreground">
-                          In database beschikbaar
-                        </p>
+                        
                       </CardContent>
                     </Card>
                   </div>
