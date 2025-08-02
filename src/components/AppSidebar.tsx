@@ -69,7 +69,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                       <NavLink to={item.url} className={getNavCls}>
                         <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
+                        {item.title}
                       </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>)}
