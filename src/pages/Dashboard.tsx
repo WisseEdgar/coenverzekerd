@@ -68,25 +68,25 @@ const Dashboard = () => {
 
         if (!clientError && allClients) {
           const now = new Date();
-          const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+          const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+          const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, now.getDate());
 
-          const currentWeekClients = allClients.filter(client => 
-            new Date(client.created_at) >= oneWeekAgo
+          const currentMonthClients = allClients.filter(client => 
+            new Date(client.created_at) >= oneMonthAgo
           ).length;
 
-          const previousWeekClients = allClients.filter(client => {
+          const previousMonthClients = allClients.filter(client => {
             const createdAt = new Date(client.created_at);
-            return createdAt >= twoWeeksAgo && createdAt < oneWeekAgo;
+            return createdAt >= twoMonthsAgo && createdAt < oneMonthAgo;
           }).length;
 
-          const weeklyChange = previousWeekClients > 0 
-            ? Math.round(((currentWeekClients - previousWeekClients) / previousWeekClients) * 100)
+          const monthlyChange = previousMonthClients > 0 
+            ? Math.round(((currentMonthClients - previousMonthClients) / previousMonthClients) * 100)
             : 0;
 
           setClientStats({
             total: allClients.length,
-            weeklyChange
+            weeklyChange: monthlyChange
           });
         }
 
@@ -174,7 +174,7 @@ const Dashboard = () => {
                       <CardContent>
                         <div className="text-2xl font-bold text-simon-blue">{clientStats.total}</div>
                         <p className="text-xs text-muted-foreground">
-                          {clientStats.weeklyChange > 0 ? '+' : ''}{clientStats.weeklyChange}% t.o.v. vorige week
+                          {clientStats.weeklyChange > 0 ? '+' : ''}{clientStats.weeklyChange}% t.o.v. vorige maand
                         </p>
                       </CardContent>
                     </Card>
