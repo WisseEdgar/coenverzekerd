@@ -28,6 +28,7 @@ const Dashboard = () => {
     total: 0,
     weeklyChange: 0
   });
+  const [todayChats, setTodayChats] = useState(0);
   const {
     toast
   } = useToast();
@@ -82,6 +83,17 @@ const Dashboard = () => {
             total: allClients.length,
             weeklyChange: monthlyChange
           });
+        }
+
+        // Fetch today's conversations count
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const {
+          data: todayConversations,
+          error: conversationError
+        } = await supabase.from('conversations').select('id').eq('user_id', user.user.id).gte('created_at', today.toISOString());
+        if (!conversationError && todayConversations) {
+          setTodayChats(todayConversations.length);
         }
         const activities: RecentActivity[] = conversations?.map(conv => {
           // Get the first user message to extract insurance context
@@ -178,7 +190,7 @@ const Dashboard = () => {
                         <Search className="h-4 w-4 text-simon-green" />
                       </CardHeader>
                       <CardContent>
-                        <div className="text-2xl font-bold text-simon-blue">28</div>
+                        <div className="text-2xl font-bold text-simon-blue">{todayChats}</div>
                         
                       </CardContent>
                     </Card>
