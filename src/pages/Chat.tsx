@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SidebarProvider, SidebarTrigger, Sidebar, SidebarContent } from "@/components/ui/sidebar";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -52,6 +52,7 @@ const Chat = () => {
   const {
     toast
   } = useToast();
+  const navigate = useNavigate();
 
   // Check auth and load conversations on mount
   useEffect(() => {
@@ -373,7 +374,12 @@ const Chat = () => {
 
             {/* Footer */}
             <div className="p-4 border-t border-border">
-              <Button variant="ghost" size="sm" className="w-full justify-start">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="w-full justify-start" 
+                onClick={() => navigate('/dashboard/settings')}
+              >
                 <Settings className="h-4 w-4 mr-2" />
                 <span>Instellingen</span>
               </Button>
