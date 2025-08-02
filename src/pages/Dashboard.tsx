@@ -152,7 +152,7 @@ const Dashboard = () => {
                     <Card className="shadow-card hover:shadow-card-hover transition-shadow">
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">
-                          Totaal Klanten
+                          Totaal Chats
                         </CardTitle>
                         <Users className="h-4 w-4 text-simon-green" />
                       </CardHeader>
