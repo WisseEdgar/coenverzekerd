@@ -29,6 +29,7 @@ const Dashboard = () => {
     weeklyChange: 0
   });
   const [todayChats, setTodayChats] = useState(0);
+  const [totalDocuments, setTotalDocuments] = useState(0);
   const {
     toast
   } = useToast();
@@ -94,6 +95,15 @@ const Dashboard = () => {
         } = await supabase.from('conversations').select('id').eq('user_id', user.user.id).gte('created_at', today.toISOString());
         if (!conversationError && todayConversations) {
           setTodayChats(todayConversations.length);
+        }
+
+        // Fetch total documents count
+        const {
+          data: allDocuments,
+          error: documentsError
+        } = await supabase.from('documents').select('id');
+        if (!documentsError && allDocuments) {
+          setTotalDocuments(allDocuments.length);
         }
         const activities: RecentActivity[] = conversations?.map(conv => {
           // Get the first user message to extract insurance context
@@ -203,7 +213,7 @@ const Dashboard = () => {
                         <FileText className="h-4 w-4 text-simon-green" />
                       </CardHeader>
                       <CardContent>
-                        <div className="text-2xl font-bold text-simon-blue">1,248</div>
+                        <div className="text-2xl font-bold text-simon-blue">{totalDocuments}</div>
                         
                       </CardContent>
                     </Card>
