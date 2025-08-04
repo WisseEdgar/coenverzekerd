@@ -7,10 +7,6 @@ const mainItems = [{
   url: "/dashboard",
   icon: Home
 }, {
-  title: "Klant Matching",
-  url: "/dashboard/matching",
-  icon: Search
-}, {
   title: "Klanten",
   url: "/dashboard/clients",
   icon: Users
