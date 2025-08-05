@@ -17,7 +17,7 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 220 9% 15%;
 
-    /* Simon brand colors - inspired by green theme */
+    /* Coenverzekerd brand colors - inspired by green theme */
     --primary: 142 76% 36%;
     --primary-foreground: 0 0% 100%;
 
@@ -37,15 +37,15 @@ All colors MUST be HSL.
     --input: 220 13% 91%;
     --ring: 142 76% 36%;
 
-    /* Simon specific design tokens */
-    --simon-green: 142 76% 36%;
-    --simon-green-light: 142 76% 95%;
-    --simon-green-dark: 142 76% 28%;
-    --simon-blue: 220 91% 15%;
-    --simon-blue-light: 220 91% 95%;
+    /* Coenverzekerd specific design tokens */
+    --coenverzekerd-green: 142 76% 36%;
+    --coenverzekerd-green-light: 142 76% 95%;
+    --coenverzekerd-green-dark: 142 76% 28%;
+    --coenverzekerd-blue: 220 91% 15%;
+    --coenverzekerd-blue-light: 220 91% 95%;
     
     /* Gradients */
-    --gradient-hero: linear-gradient(135deg, hsl(var(--simon-green)), hsl(var(--simon-green-dark)));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--coenverzekerd-green)), hsl(var(--coenverzekerd-green-dark)));
     --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(220 13% 98%));
     
     /* Shadows */

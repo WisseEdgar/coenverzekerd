@@ -18,9 +18,9 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        simon: "bg-simon-green text-white hover:bg-simon-green-dark shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200",
-        "simon-outline": "border-2 border-simon-green text-simon-green bg-transparent hover:bg-simon-green hover:text-white",
-        "simon-light": "bg-simon-green-light text-simon-green hover:bg-simon-green hover:text-white",
+        coenverzekerd: "bg-coenverzekerd-green text-white hover:bg-coenverzekerd-green-dark shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200",
+        "coenverzekerd-outline": "border-2 border-coenverzekerd-green text-coenverzekerd-green bg-transparent hover:bg-coenverzekerd-green hover:text-white",
+        "coenverzekerd-light": "bg-coenverzekerd-green-light text-coenverzekerd-green hover:bg-coenverzekerd-green hover:text-white",
       },
       size: {
         default: "h-10 px-4 py-2",

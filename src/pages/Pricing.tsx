@@ -39,7 +39,7 @@ const Pricing = () => {
         "Custom branded interface"
       ],
       buttonText: "Start Nu",
-      buttonVariant: "simon" as const,
+      buttonVariant: "coenverzekerd" as const,
       badge: "MEEST POPULAIR",
       highlighted: true
     },
@@ -120,7 +120,7 @@ const Pricing = () => {
           <p className="text-muted-foreground mb-6">
             Start vandaag nog met een gratis proefperiode van 14 dagen
           </p>
-          <Button variant="simon" size="lg">
+          <Button variant="coenverzekerd" size="lg">
             Start Gratis Proef
           </Button>
         </div>

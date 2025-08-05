@@ -62,12 +62,12 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				simon: {
-					green: 'hsl(var(--simon-green))',
-					'green-light': 'hsl(var(--simon-green-light))',
-					'green-dark': 'hsl(var(--simon-green-dark))',
-					blue: 'hsl(var(--simon-blue))',
-					'blue-light': 'hsl(var(--simon-blue-light))'
+				coenverzekerd: {
+					green: 'hsl(var(--coenverzekerd-green))',
+					'green-light': 'hsl(var(--coenverzekerd-green-light))',
+					'green-dark': 'hsl(var(--coenverzekerd-green-dark))',
+					blue: 'hsl(var(--coenverzekerd-blue))',
+					'blue-light': 'hsl(var(--coenverzekerd-blue-light))'
 				}
 			},
 			backgroundImage: {

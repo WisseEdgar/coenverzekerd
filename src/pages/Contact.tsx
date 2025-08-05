@@ -236,7 +236,7 @@ const Contact = () => {
                   <Button 
                     type="submit" 
                     disabled={isSubmitting}
-                    variant="simon"
+                    variant="coenverzekerd"
                     className="w-full"
                   >
                     {isSubmitting ? "Verzenden..." : "Bericht Verzenden"}
@@ -305,7 +305,7 @@ const Contact = () => {
             Start vandaag nog met een gratis demo en ervaar hoe Simon uw adviesproces kan verbeteren.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button variant="simon" size="lg">
+            <Button variant="coenverzekerd" size="lg">
               Plan een Demo
             </Button>
             <Button variant="outline" size="lg">

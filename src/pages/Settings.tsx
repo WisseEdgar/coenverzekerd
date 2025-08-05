@@ -213,7 +213,7 @@ const Settings = () => {
             <Button 
               type="submit" 
               disabled={isUpdatingEmail || email === user.email}
-              variant="simon"
+              variant="coenverzekerd"
             >
               {isUpdatingEmail ? "Bijwerken..." : "Email Bijwerken"}
             </Button>
@@ -281,7 +281,7 @@ const Settings = () => {
             <Button 
               type="submit" 
               disabled={isUpdatingPassword || !newPassword || !confirmPassword}
-              variant="simon"
+              variant="coenverzekerd"
             >
               {isUpdatingPassword ? "Bijwerken..." : "Wachtwoord Bijwerken"}
             </Button>

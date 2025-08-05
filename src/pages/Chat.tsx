@@ -345,7 +345,7 @@ const Chat = () => {
                 <BarChart3 className="h-8 w-8 text-simon-green bg-slate-50" />
                 <span className="text-xl font-bold text-simon-blue">Simon</span>
               </Link>
-              <Button className="w-full" variant="simon" onClick={handleNewChat}>
+              <Button className="w-full" variant="coenverzekerd" onClick={handleNewChat}>
                 <Plus className="h-4 w-4 mr-2" />
                 <span>Nieuwe chat</span>
               </Button>
