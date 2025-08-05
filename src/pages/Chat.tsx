@@ -394,7 +394,7 @@ const Chat = () => {
             <div className="flex items-center gap-2">
               <SidebarTrigger className="mr-2" />
               <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-simon-green text-white">SA</AvatarFallback>
+                <AvatarFallback className="bg-simon-green text-white">CA</AvatarFallback>
               </Avatar>
               <div>
                 <h2 className="font-semibold">Coen A.I+</h2>
