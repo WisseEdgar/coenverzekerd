@@ -428,7 +428,7 @@ const Chat = () => {
               <div className="space-y-6 max-w-4xl">
                  {messages.map(msg => <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                      {msg.role === 'assistant' && <Avatar className="h-8 w-8 mt-1">
-                         <AvatarFallback className="bg-simon-green text-white text-xs">SA</AvatarFallback>
+                          <AvatarFallback className="bg-simon-green text-white text-xs">CA</AvatarFallback>
                        </Avatar>}
                      <div className="flex flex-col max-w-2xl">
                         <Card className={`p-4 ${msg.role === 'user' ? 'bg-simon-green text-white' : 'bg-muted'}`}>
