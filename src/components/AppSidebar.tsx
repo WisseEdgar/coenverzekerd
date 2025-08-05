@@ -51,8 +51,7 @@ export function AppSidebar() {
         {/* Header */}
         <div className="p-4 border-b border-border">
           <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <BarChart3 className="h-8 w-8 text-simon-green bg-slate-50" />
-            {!isCollapsed && <span className="text-xl font-bold text-simon-blue">Simon</span>}
+            <img src="/lovable-uploads/3544deff-46ae-4aca-a6bb-36d9729ebfa5.png" alt="Coenverzekerd" className="h-8" />
           </Link>
         </div>
 
