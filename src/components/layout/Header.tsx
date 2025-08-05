@@ -24,7 +24,7 @@ export const Header = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <img src="/lovable-uploads/3544deff-46ae-4aca-a6bb-36d9729ebfa5.png" alt="Coenverzekerd" className="h-25" />
+            <img src="/lovable-uploads/3544deff-46ae-4aca-a6bb-36d9729ebfa5.png" alt="Coenverzekerd" className="h-8" />
           </Link>
 
           {/* Desktop Navigation */}
