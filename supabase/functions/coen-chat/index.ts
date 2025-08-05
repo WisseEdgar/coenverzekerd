@@ -93,7 +93,7 @@ serve(async (req) => {
       });
     }
 
-    const systemPrompt = `Je bent Simon A.I+, een gespecialiseerde verzekering matching assistent. Je helpt verzekeringsadviseurs bij het vinden van de beste verzekeringen voor hun klanten.
+    const systemPrompt = `Je bent Coen A.I+, een gespecialiseerde verzekering matching assistent. Je helpt verzekeringsadviseurs bij het vinden van de beste verzekeringen voor hun klanten.
 
 Je expertise:
 - Autoverzekeringen (WA, Beperkt Casco, Volledig Casco, elektrische voertuigen)
@@ -151,7 +151,7 @@ Spreek professioneel maar toegankelijk Nederlands. Focus op concrete, bruikbare 
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Error in simon-chat function:', error);
+    console.error('Error in coen-chat function:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -68,7 +68,7 @@ const Contact = () => {
     {
       icon: Mail,
       title: "Email",
-      details: ["info@simon.nl", "support@simon.nl"],
+      details: ["info@coen.nl", "support@coen.nl"],
       color: "text-simon-green"
     },
     {
@@ -83,7 +83,7 @@ const Contact = () => {
     {
       icon: MessageSquare,
       title: "Demo Aanvragen",
-      description: "Bekijk Simon in actie met een persoonlijke demonstratie"
+      description: "Bekijk Coen in actie met een persoonlijke demonstratie"
     },
     {
       icon: Users,
@@ -108,7 +108,7 @@ const Contact = () => {
             Neem Contact Op
           </h1>
           <p className="text-xl text-white/90 mb-8">
-            Heeft u vragen over Simon of wilt u een demo? We helpen u graag verder.
+            Heeft u vragen over Coen of wilt u een demo? We helpen u graag verder.
           </p>
         </div>
       </section>
@@ -252,7 +252,7 @@ const Contact = () => {
                   Waarom contact opnemen?
                 </h2>
                 <p className="text-muted-foreground mb-6">
-                  We zijn er om u te helpen het meeste uit Simon te halen. Van demo's tot enterprise oplossingen.
+                  We zijn er om u te helpen het meeste uit Coen te halen. Van demo's tot enterprise oplossingen.
                 </p>
               </div>
 
@@ -302,7 +302,7 @@ const Contact = () => {
             Klaar om te beginnen?
           </h2>
           <p className="text-lg text-muted-foreground mb-8">
-            Start vandaag nog met een gratis demo en ervaar hoe Simon uw adviesproces kan verbeteren.
+            Start vandaag nog met een gratis demo en ervaar hoe Coen uw adviesproces kan verbeteren.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button variant="simon" size="lg">

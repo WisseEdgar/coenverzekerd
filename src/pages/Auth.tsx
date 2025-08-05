@@ -94,7 +94,7 @@ const Auth = () => {
           <CardHeader className="text-center space-y-4">
             <div className="mx-auto flex items-center gap-2">
               <BarChart3 className="h-8 w-8 text-simon-green" />
-              <span className="text-2xl font-bold text-simon-blue">Simon</span>
+              <span className="text-2xl font-bold text-simon-blue">Coen</span>
             </div>
             <div>
               <CardTitle className="text-2xl text-simon-blue">

@@ -124,7 +124,7 @@ const Chat = () => {
     }
   };
   const addWelcomeMessage = async (conversationId: string) => {
-    let welcomeContent = "Hallo! Ik ben Simon A.I+, je persoonlijke verzekering matching assistent.";
+    let welcomeContent = "Hallo! Ik ben Coen A.I+, je persoonlijke verzekering matching assistent.";
     if (selectedClient) {
       const clientName = selectedClient.client_type === 'private' ? selectedClient.full_name : selectedClient.company_name;
       welcomeContent += ` Ik zie dat we spreken over ${clientName}. Ik heb toegang tot hun profiel en kan gepersonaliseerd advies geven.`;
@@ -284,17 +284,17 @@ const Chat = () => {
         }
       }
 
-      // Prepare conversation history for API (exclude welcome messages)
-      const conversationHistory = updatedMessages.filter(msg => !(msg.role === "assistant" && msg.content.includes("Hallo! Ik ben Simon A.I+"))).map(msg => ({
+              // Prepare conversation history for API (exclude welcome messages)
+      const conversationHistory = updatedMessages.filter(msg => !(msg.role === "assistant" && msg.content.includes("Hallo! Ik ben Coen A.I+"))).map(msg => ({
         role: msg.role,
         content: msg.content
       }));
 
-      // Call Simon AI with client context
+      // Call Coen AI with client context
       const {
         data: aiData,
         error: aiError
-      } = await supabase.functions.invoke('simon-chat', {
+      } = await supabase.functions.invoke('coen-chat', {
         body: {
           message: userMessage,
           conversationHistory: conversationHistory,
@@ -343,7 +343,7 @@ const Chat = () => {
             <div className="p-4 border-b border-border">
               <Link to="/" className="flex items-center gap-2 mb-4 hover:opacity-80 transition-opacity">
                 <BarChart3 className="h-8 w-8 text-simon-green bg-slate-50" />
-                <span className="text-xl font-bold text-simon-blue">Simon</span>
+                <span className="text-xl font-bold text-simon-blue">Coen</span>
               </Link>
               <Button className="w-full" variant="simon" onClick={handleNewChat}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -398,7 +398,7 @@ const Chat = () => {
                 <AvatarFallback className="bg-simon-green text-white">SA</AvatarFallback>
               </Avatar>
               <div>
-                <h2 className="font-semibold">Simon A.I+</h2>
+                <h2 className="font-semibold">Coen A.I+</h2>
                 <p className="text-sm text-muted-foreground">{activeConversation?.title || "Verzekering Matching Assistent"}</p>
               </div>
             </div>
@@ -454,7 +454,7 @@ const Chat = () => {
                       <AvatarFallback className="bg-simon-green text-white text-xs">SA</AvatarFallback>
                     </Avatar>
                     <Card className="p-4 max-w-2xl bg-muted">
-                      <p className="text-sm text-muted-foreground">Simon denkt na...</p>
+                      <p className="text-sm text-muted-foreground">Coen denkt na...</p>
                     </Card>
                   </div>}
               </div>
@@ -462,7 +462,7 @@ const Chat = () => {
           </>}
 
         {/* Save Client Dialog */}
-        <SaveClientDialog isOpen={showSaveDialog} onClose={() => setShowSaveDialog(false)} onSaved={handleClientSaved} initialData={intakeData} conversationSummary={messages.filter(msg => msg.role === 'user' || msg.role === 'assistant').map(msg => `${msg.role === 'user' ? 'Klant' : 'Simon'}: ${msg.content}`).join('\n\n')} />
+        <SaveClientDialog isOpen={showSaveDialog} onClose={() => setShowSaveDialog(false)} onSaved={handleClientSaved} initialData={intakeData} conversationSummary={messages.filter(msg => msg.role === 'user' || msg.role === 'assistant').map(msg => `${msg.role === 'user' ? 'Klant' : 'Coen'}: ${msg.content}`).join('\n\n')} />
 
         {/* Input Area - Hidden during intake */}
         {!showIntake && <div className="p-4 border-t border-border bg-card">
@@ -475,7 +475,7 @@ const Chat = () => {
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2 max-w-4xl">
-              Simon kan fouten maken. Controleer belangrijke informatie altijd bij de verzekeraar.
+              Coen kan fouten maken. Controleer belangrijke informatie altijd bij de verzekeraar.
             </p>
           </div>}
       </div>
