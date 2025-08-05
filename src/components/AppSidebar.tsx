@@ -51,7 +51,7 @@ export function AppSidebar() {
         {/* Header */}
         <div className="p-4 border-b border-border">
           <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <img src="/lovable-uploads/3544deff-46ae-4aca-a6bb-36d9729ebfa5.png" alt="Coenverzekerd" className="h-8" />
+            <img src="/lovable-uploads/3544deff-46ae-4aca-a6bb-36d9729ebfa5.png" alt="Coenverzekerd" className="h-12" />
           </Link>
         </div>
 
