@@ -14,10 +14,7 @@ export const HeroSection = () => {
             <span className="text-simon-green">AI precisie</span>
           </h1>
           
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-            Simon helpt verzekeringsadviseurs om binnen seconden de perfecte polis te vinden voor elke klant. 
-            Geen eindeloos zoeken meer door documenten - laat AI het werk doen.
-          </p>
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">Coen helpt verzekeringsadviseurs om binnen seconden de perfecte polis te vinden voor elke klant. Geen eindeloos zoeken meer door documenten - laat AI het werk doen.</p>
           
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
