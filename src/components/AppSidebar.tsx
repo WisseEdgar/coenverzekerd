@@ -51,7 +51,7 @@ export function AppSidebar() {
         {/* Header */}
         <div className="p-4 border-b border-border">
           <Link to="/" className="flex items-center hover:opacity-80 transition-opacity">
-            {!isCollapsed && <img src="/lovable-uploads/0a1e7dd0-b59f-477d-bc49-751dc28a0b56.png" alt="Coenverzekerd" className="h-8" />}
+            {!isCollapsed && <span className="text-xl font-bold text-coenverzekerd-blue">Coenverzekerd</span>}
           </Link>
         </div>
 

@@ -24,7 +24,7 @@ export const Header = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center">
-            <img src="/lovable-uploads/0a1e7dd0-b59f-477d-bc49-751dc28a0b56.png" alt="Coenverzekerd" className="h-8" />
+            <span className="text-xl font-bold text-coenverzekerd-blue">Coenverzekerd</span>
           </Link>
 
           {/* Desktop Navigation */}
