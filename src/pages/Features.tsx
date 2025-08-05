@@ -121,9 +121,7 @@ const Features = () => {
           <h1 className="text-4xl font-bold text-foreground mb-6">
             Krachtige Features voor <span className="text-simon-green">Verzekeringsadviseurs</span>
           </h1>
-          <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
-            Ontdek hoe Simon's AI-gestuurde platform je helpt om sneller en accurater de juiste verzekeringen te vinden voor je klanten.
-          </p>
+          <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">Ontdek hoe Coen's AI-gestuurde platform je helpt om sneller en accurater de juiste verzekeringen te vinden voor je klanten.</p>
         </div>
       </section>
 
