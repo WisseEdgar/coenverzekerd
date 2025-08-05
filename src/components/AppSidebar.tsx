@@ -50,8 +50,7 @@ export function AppSidebar() {
       <SidebarContent className="bg-background border-r border-border">
         {/* Header */}
         <div className="p-4 border-b border-border">
-          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <BarChart3 className="h-8 w-8 text-coenverzekerd-green bg-slate-50" />
+          <Link to="/" className="flex items-center hover:opacity-80 transition-opacity">
             {!isCollapsed && <span className="text-xl font-bold text-coenverzekerd-blue">Coenverzekerd</span>}
           </Link>
         </div>

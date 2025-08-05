@@ -23,8 +23,7 @@ export const Header = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <BarChart3 className="h-8 w-8 text-coenverzekerd-green bg-slate-50" />
+          <Link to="/" className="flex items-center">
             <span className="text-xl font-bold text-coenverzekerd-blue">Coenverzekerd</span>
           </Link>
 
