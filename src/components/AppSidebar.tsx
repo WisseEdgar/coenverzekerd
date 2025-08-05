@@ -45,13 +45,14 @@ export function AppSidebar() {
     isActive
   }: {
     isActive: boolean;
-  }) => isActive ? "bg-coenverzekerd-green text-black font-medium hover:bg-coenverzekerd-green-dark" : "text-black hover:bg-coenverzekerd-green-light hover:text-coenverzekerd-green";
+  }) => isActive ? "bg-simon-green text-black font-medium hover:bg-simon-green-dark" : "text-black hover:bg-simon-green-light hover:text-simon-green";
   return <Sidebar collapsible="icon">
       <SidebarContent className="bg-background border-r border-border">
         {/* Header */}
         <div className="p-4 border-b border-border">
-          <Link to="/" className="flex items-center hover:opacity-80 transition-opacity">
-            {!isCollapsed && <span className="text-xl font-bold text-coenverzekerd-blue">Coenverzekerd</span>}
+          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <BarChart3 className="h-8 w-8 text-simon-green bg-slate-50" />
+            {!isCollapsed && <span className="text-xl font-bold text-simon-blue">Simon</span>}
           </Link>
         </div>
 

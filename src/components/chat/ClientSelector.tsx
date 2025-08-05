@@ -73,13 +73,13 @@ export default function ClientSelector({ onClientSelect, selectedClient }: Clien
   return (
     <div className="mb-4">
       {selectedClient ? (
-        <Card className="bg-coenverzekerd-green-light border-coenverzekerd-green">
+        <Card className="bg-simon-green-light border-simon-green">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {selectedClient.client_type === 'private' ? 
-                  <User className="h-5 w-5 text-coenverzekerd-green" /> : 
-                  <Building className="h-5 w-5 text-coenverzekerd-green" />
+                  <User className="h-5 w-5 text-simon-green" /> : 
+                  <Building className="h-5 w-5 text-simon-green" />
                 }
                 <div>
                   <p className="font-medium">

@@ -23,13 +23,14 @@ export const Header = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center">
-            <span className="text-xl font-bold text-coenverzekerd-blue">Coenverzekerd</span>
+          <Link to="/" className="flex items-center space-x-2">
+            <BarChart3 className="h-8 w-8 text-simon-green bg-slate-50" />
+            <span className="text-xl font-bold text-simon-blue">Simon</span>
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            {navigation.map(item => <Link key={item.name} to={item.href} className={`text-sm font-medium transition-colors ${isActive(item.href) ? "text-coenverzekerd-green" : "text-muted-foreground hover:text-foreground"}`}>
+            {navigation.map(item => <Link key={item.name} to={item.href} className={`text-sm font-medium transition-colors ${isActive(item.href) ? "text-simon-green" : "text-muted-foreground hover:text-foreground"}`}>
                 {item.name}
               </Link>)}
           </nav>
@@ -48,7 +49,7 @@ export const Header = () => {
                   </Button>
                 </Link>
                 <Link to="/auth">
-                  <Button variant="coenverzekerd" size="sm">
+                  <Button variant="simon" size="sm">
                     Get Started
                   </Button>
                 </Link>
@@ -67,7 +68,7 @@ export const Header = () => {
         {/* Mobile Navigation */}
         {isMenuOpen && <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t border-border">
-              {navigation.map(item => <Link key={item.name} to={item.href} className={`block px-3 py-2 text-base font-medium transition-colors ${isActive(item.href) ? "text-coenverzekerd-green" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setIsMenuOpen(false)}>
+              {navigation.map(item => <Link key={item.name} to={item.href} className={`block px-3 py-2 text-base font-medium transition-colors ${isActive(item.href) ? "text-simon-green" : "text-muted-foreground hover:text-foreground"}`} onClick={() => setIsMenuOpen(false)}>
                   {item.name}
                 </Link>)}
               <div className="flex flex-col space-y-2 pt-4">
@@ -98,7 +99,7 @@ export const Header = () => {
                       </Button>
                     </Link>
                     <Link to="/auth" onClick={() => setIsMenuOpen(false)}>
-                      <Button variant="coenverzekerd" size="sm" className="w-full">
+                      <Button variant="simon" size="sm" className="w-full">
                         Get Started
                       </Button>
                     </Link>

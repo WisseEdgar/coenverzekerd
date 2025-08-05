@@ -255,7 +255,7 @@ export default function IntakeQuestionnaire({ onComplete, onSkip, onSaveAsClient
         </div>
         <div className="w-full bg-muted rounded-full h-2">
           <div 
-            className="bg-coenverzekerd-green h-2 rounded-full transition-all duration-300"
+            className="bg-simon-green h-2 rounded-full transition-all duration-300"
             style={{ width: `${((currentStep + 1) / visibleQuestions.length) * 100}%` }}
           />
         </div>

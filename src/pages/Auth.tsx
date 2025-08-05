@@ -79,12 +79,12 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-coenverzekerd-green-light via-background to-coenverzekerd-blue-light flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-simon-green-light via-background to-simon-blue-light flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Back to home */}
         <Link 
           to="/" 
-          className="inline-flex items-center gap-2 text-coenverzekerd-green hover:text-coenverzekerd-green-dark mb-6 transition-colors"
+          className="inline-flex items-center gap-2 text-simon-green hover:text-simon-green-dark mb-6 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           Terug naar home
@@ -93,11 +93,11 @@ const Auth = () => {
         <Card className="shadow-card-hover border-0">
           <CardHeader className="text-center space-y-4">
             <div className="mx-auto flex items-center gap-2">
-              <BarChart3 className="h-8 w-8 text-coenverzekerd-green" />
-              <span className="text-2xl font-bold text-coenverzekerd-blue">Coenverzekerd</span>
+              <BarChart3 className="h-8 w-8 text-simon-green" />
+              <span className="text-2xl font-bold text-simon-blue">Simon</span>
             </div>
             <div>
-              <CardTitle className="text-2xl text-coenverzekerd-blue">
+              <CardTitle className="text-2xl text-simon-blue">
                 {isLogin ? "Welkom terug" : "Account aanmaken"}
               </CardTitle>
               <CardDescription>
@@ -162,7 +162,7 @@ const Auth = () => {
                 />
               </div>
               
-              <Button type="submit" variant="coenverzekerd" className="w-full" size="lg" disabled={loading}>
+              <Button type="submit" variant="simon" className="w-full" size="lg" disabled={loading}>
                 {loading ? "Bezig..." : (isLogin ? "Inloggen" : "Account aanmaken")}
               </Button>
             </form>
@@ -174,15 +174,15 @@ const Auth = () => {
               <Button
                 variant="link"
                 onClick={() => setIsLogin(!isLogin)}
-                className="text-coenverzekerd-green hover:text-coenverzekerd-green-dark p-0 h-auto font-medium"
+                className="text-simon-green hover:text-simon-green-dark p-0 h-auto font-medium"
               >
                 {isLogin ? "Registreer nu gratis" : "Log hier in"}
               </Button>
             </div>
             
             {!isLogin && (
-              <div className="mt-6 p-4 bg-coenverzekerd-green-light rounded-lg">
-                <p className="text-sm text-coenverzekerd-green font-medium mb-2">
+              <div className="mt-6 p-4 bg-simon-green-light rounded-lg">
+                <p className="text-sm text-simon-green font-medium mb-2">
                   ✓ 14 dagen gratis proberen
                 </p>
                 <p className="text-xs text-muted-foreground">

@@ -25,7 +25,7 @@ export const ProfileDropdown: React.FC = () => {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarFallback className="bg-coenverzekerd-green text-white text-xs">
+            <AvatarFallback className="bg-simon-green text-white text-xs">
               {userInitials}
             </AvatarFallback>
           </Avatar>
