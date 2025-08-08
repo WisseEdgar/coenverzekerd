@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SidebarProvider, SidebarTrigger, Sidebar, SidebarContent } from "@/components/ui/sidebar";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { Link, useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
@@ -410,18 +411,26 @@ const Chat = () => {
             <IntakeQuestionnaire onComplete={handleIntakeComplete} onSkip={handleIntakeSkip} onSaveAsClient={handleSaveAsClient} />
           </div> : <>
             {/* Client Selector */}
-            <div className="p-4 border-b border-border bg-card">
-              <ClientSelector selectedClient={selectedClient} onClientSelect={handleClientSelect} />
-              {!selectedClient && !intakeData && <Button onClick={handleStartChat} variant="outline" className="w-full mb-4">
-                  Start Gesprek (met intake)
-                </Button>}
-              {!selectedClient && !intakeData && messages.length > 0 && <div className="flex gap-2">
-                  <Button onClick={() => setShowSaveDialog(true)} variant="outline" size="sm" className="flex-1">
-                    <Save className="mr-2 h-4 w-4" />
-                    Opslaan als Klant
-                  </Button>
-                </div>}
-            </div>
+            <Collapsible open={messages.length === 0}>
+              <CollapsibleContent>
+                <div className="p-4 border-b border-border bg-card">
+                  <ClientSelector selectedClient={selectedClient} onClientSelect={handleClientSelect} />
+                  {!selectedClient && !intakeData && (
+                    <Button onClick={handleStartChat} variant="outline" className="w-full mb-4">
+                      Start Gesprek (met intake)
+                    </Button>
+                  )}
+                  {!selectedClient && !intakeData && messages.length > 0 && (
+                    <div className="flex gap-2">
+                      <Button onClick={() => setShowSaveDialog(true)} variant="outline" size="sm" className="flex-1">
+                        <Save className="mr-2 h-4 w-4" />
+                        Opslaan als Klant
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
 
             {/* Messages */}
             <ScrollArea className="flex-1 p-4">
