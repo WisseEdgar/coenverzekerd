@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Send, Settings, MessageSquare, X, BarChart3, Save } from "lucide-react";
+import { Plus, Send, Settings, MessageSquare, X, BarChart3, Save, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -418,8 +418,12 @@ const Chat = () => {
               <div className="p-3 border-b border-border bg-card flex items-center justify-between">
                 <span className="text-sm font-medium text-muted-foreground">Klantopties</span>
                 <CollapsibleTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    {clientPanelOpen ? 'Verberg' : 'Toon'}
+                  <Button variant="ghost" size="sm" aria-label={clientPanelOpen ? "Verberg klantopties" : "Toon klantopties"}>
+                    {clientPanelOpen ? (
+                      <ChevronUp className="h-4 w-4" aria-hidden="true" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" aria-hidden="true" />
+                    )}
                   </Button>
                 </CollapsibleTrigger>
               </div>
