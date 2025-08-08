@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SidebarProvider, SidebarTrigger, Sidebar, SidebarContent } from "@/components/ui/sidebar";
-import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Link, useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,15 +50,18 @@ const Chat = () => {
   const [showIntake, setShowIntake] = useState(false);
   const [intakeData, setIntakeData] = useState<any>(null);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
-  const {
-    toast
-  } = useToast();
+  const [clientPanelOpen, setClientPanelOpen] = useState(true);
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   // Check auth and load conversations on mount
   useEffect(() => {
     checkAuth();
   }, []);
+  // Auto-collapse client options after first message, but allow manual reopen
+  useEffect(() => {
+    if (messages.length > 0) setClientPanelOpen(false);
+  }, [messages.length]);
   const checkAuth = async () => {
     const {
       data: {
@@ -411,7 +414,15 @@ const Chat = () => {
             <IntakeQuestionnaire onComplete={handleIntakeComplete} onSkip={handleIntakeSkip} onSaveAsClient={handleSaveAsClient} />
           </div> : <>
             {/* Client Selector */}
-            <Collapsible open={messages.length === 0}>
+            <Collapsible open={clientPanelOpen} onOpenChange={setClientPanelOpen}>
+              <div className="p-3 border-b border-border bg-card flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground">Klantopties</span>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    {clientPanelOpen ? 'Verberg' : 'Toon'}
+                  </Button>
+                </CollapsibleTrigger>
+              </div>
               <CollapsibleContent>
                 <div className="p-4 border-b border-border bg-card">
                   <ClientSelector selectedClient={selectedClient} onClientSelect={handleClientSelect} />
