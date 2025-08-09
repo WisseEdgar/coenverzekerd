@@ -40,47 +40,24 @@ serve(async (req) => {
     const embeddingData = await embeddingResponse.json();
     const queryEmbedding = embeddingData.data[0].embedding;
 
-    console.log('Searching for relevant documents via vector similarity...');
-    let documentContext = '';
-    let matchedDocs: any[] = [];
-    try {
-      const { data: matches, error: matchError } = await supabase.rpc('search_documents', {
-        query_embedding: queryEmbedding,
-        match_threshold: 0.65,
-        match_count: 5,
-      });
-      if (matchError) throw matchError;
-      matchedDocs = matches || [];
-    } catch (e) {
-      console.warn('Vector search failed, falling back to latest documents:', (e as any)?.message || e);
-      const { data: fallbackDocs } = await supabase
-        .from('documents')
-        .select(`
-          id,
-          title,
-          summary,
-          filename,
-          insurance_types(name),
-          insurance_companies(name)
-        `)
-        .order('updated_at', { ascending: false })
-        .limit(3);
-      matchedDocs = fallbackDocs || [];
-    }
+    // Search for relevant documents using simple text search (vector search will be added later)
+    console.log('Searching for relevant documents...');
+    const { data: docs } = await supabase
+      .from('documents')
+      .select(`
+        title, 
+        summary,
+        filename,
+        insurance_types(name), 
+        insurance_companies(name)
+      `)
+      .limit(3);
 
-    if (matchedDocs.length > 0) {
-      documentContext = matchedDocs.map((doc: any) => {
-        const insuranceType = doc.insurance_type || doc.insurance_types?.name || 'Onbekend';
-        const insuranceCompany = doc.insurance_company || doc.insurance_companies?.name || 'Onbekend';
-        const sim = typeof doc.similarity === 'number' ? ` (similariteit: ${doc.similarity.toFixed(2)})` : '';
-        return [
-          `Document: ${doc.title}${sim}`,
-          `Bestand: ${doc.filename}`,
-          `Type: ${insuranceType}`,
-          `Maatschappij: ${insuranceCompany}`,
-          `Samenvatting: ${doc.summary || 'Geen samenvatting beschikbaar'}`,
-        ].join('\n');
-      }).join('\n\n');
+    let documentContext = '';
+    if (docs && docs.length > 0) {
+      documentContext = docs.map(doc => 
+        `Document: ${doc.title}\nBestand: ${doc.filename}\nType: ${doc.insurance_types?.name || 'Onbekend'}\nMaatschappij: ${doc.insurance_companies?.name || 'Onbekend'}\nSamenvatting: ${doc.summary || 'Geen samenvatting beschikbaar'}`
+      ).join('\n\n');
     }
 
     // Build context from client profile and intake data
@@ -116,46 +93,30 @@ serve(async (req) => {
       });
     }
 
-    const systemPrompt = `Je bent Coen A.I+, een gespecialiseerde verzekerings-matching assistent voor adviseurs. Je taak: match klant-eisen en -risico's met polisvoorwaarden in het systeem en bouw een concrete gespreksstrategie voor de adviseur.
+    const systemPrompt = `Je bent Coen A.I+, een gespecialiseerde verzekering matching assistent. Je helpt verzekeringsadviseurs bij het vinden van de beste verzekeringen voor hun klanten.
 
-Doelen:
-- Vind de best passende producten op basis van polisvoorwaarden, uitsluitingen, limieten en bijzonderheden.
-- Leg keuzes transparant uit met exacte verwijzingen naar documenten en secties.
-- Lever een direct uitvoerbaar advies met vervolgstap.
+Je expertise:
+- Autoverzekeringen (WA, Beperkt Casco, Volledig Casco, elektrische voertuigen)
+- Woonverzekeringen (opstal, inboedel, glasverzekering)
+- Zorgverzekeringen (basis, aanvullend, tandarts)
+- Zakelijke verzekeringen (aansprakelijkheid, rechtsbijstand, cyber)
+- Reisverzekeringen en andere specialistische polissen
 
-Beschikbare context:
+Voor elke klant situatie geef je:
+1. Een heldere analyse van de klant behoeften
+2. Top 3 meest geschikte verzekeraars met specifieke producten
+3. Uitleg waarom deze matches het beste passen
+4. Aandachtspunten en vergelijkingscriteria
+5. Praktische volgende stappen
+
 ${clientContext}
 
-Beschikbare documenten (top matches, met overeenkomstscore):
-${documentContext || 'Geen relevante documenten gevonden.'}
+${documentContext ? `BESCHIKBARE DOCUMENTEN:
+${documentContext}
 
-Strikte werkwijze:
-1) Begrijp de klantcontext en doelen (type klant, situatie, budget, tijdslijn, bestaande dekking).
-2) Haal relevante voorwaarden uit documenten; vergelijk specifiek dekkingen, limieten, eigen risico, wachttijden, clausules en uitsluitingen.
-3) Citeer exact de bepalingen: noem documenttitel, sectie/Artikel/Paragraaf en indien mogelijk pagina; voeg een korte letterlijke quote toe tussen aanhalingstekens.
-4) Scoreer elke optie op "fit" (0–100) en motiveer met concrete voorwaarden/uitsluitingen.
-5) Formuleer een gespreksstrategie: verhelderende vragen, te benadrukken voordelen, te managen risico's, en documenten die je paraat houdt.
-6) Als informatie ontbreekt of tegenstrijdig is: benoem dit expliciet en vraag gerichte verduidelijking of vraag om upload van specifieke polisvoorwaarden.
+Wanneer relevante documenten beschikbaar zijn, verwijs er dan naar in je antwoord en citeer specifieke informatie. Gebruik de documenttitels en maatschappijen bij het refereren naar informatie. Geef altijd aan wanneer informatie uit specifieke documenten komt.` : ''}
 
-Outputformaat (houd je hier strikt aan):
-- H1: Advies voor verzekeringsmatch
-- Sectie "Kernanalyse": 3–6 bullets met belangrijkste behoeften/risico's.
-- Sectie "Citaties uit documenten": voor elk relevant document 1–3 bullets in de vorm:
-  • [Document: Titel — Maatschappij — Sectie/Artikel — Pagina (indien bekend)]
-    "Exacte quote..."
-- Sectie "Top 3 opties — vergelijking":
-  | # | Maatschappij / Product | Dekking (kern) | Belangrijkste voorwaarden/limieten | Pluspunten | Minpunten | Indicatieve premie (indien bekend) | Beste voor | Bron (Titel — Sectie) |
-  Voeg onder de tabel per optie 1–2 regels motivatie toe.
-- Sectie "Adviesstrategie voor het gesprek": concrete stappen, volgorde en formuleringen (bulletlist).
-- Sectie "Volgende stap": stel 1 concrete vraag aan de klant en doe een voorstel (bijv. "Zullen we product X aanvragen?" of "Zal ik offerte Y opvragen en de polisvergelijking mailen?").
-
-Stijl en regels:
-- Schrijf in professioneel, toegankelijk Nederlands. Kort, feitelijk en bruikbaar.
-- Verwijs alleen naar documenten die in context staan. Als sectie/pagina onbekend is, noteer: "sectie onbekend".
-- Gebruik geen algemene claims zonder bron; citeer voorwaarden waar relevant.
-- Als er onvoldoende documenten zijn, geef tijdelijk best-effort advies met duidelijke beperkingen en vraag om ontbrekende documenten/secties.
-
-Gebruik de beschikbare clientinformatie om het advies te personaliseren.`;
+Spreek professioneel maar toegankelijk Nederlands. Focus op concrete, bruikbare adviezen.${clientProfile || intakeData ? ' Je hebt toegang tot client informatie - gebruik dit om gepersonaliseerd advies te geven.' : ''}`;
 
     const messages = [
       { role: 'system', content: systemPrompt },
@@ -172,8 +133,8 @@ Gebruik de beschikbare clientinformatie om het advies te personaliseren.`;
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: messages,
-        temperature: 0.3,
-        max_tokens: 1200,
+        temperature: 0.7,
+        max_tokens: 1000,
       }),
     });
 
