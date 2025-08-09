@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Search, Edit, Trash2, User, Building } from "lucide-react";
+import { getPreflightQuestionnaire } from "@/lib/preflightQuestionnaires";
 
 interface ClientProfile {
   id: string;
@@ -170,7 +171,9 @@ export default function Clients() {
         founding_year: formData.founding_year ? parseInt(formData.founding_year) : null,
         annual_revenue: formData.annual_revenue ? parseFloat(formData.annual_revenue) : null,
         number_of_employees: formData.number_of_employees ? parseInt(formData.number_of_employees) : null,
-        advisor_notes: formData.advisor_notes || null
+        advisor_notes: formData.advisor_notes || null,
+        // Store full questionnaire markdown for this client type
+        intake_questionnaire_md: getPreflightQuestionnaire(formData.client_type)
       };
 
       if (editingClient) {

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Save, X } from "lucide-react";
+import { getPreflightQuestionnaire } from "@/lib/preflightQuestionnaires";
 
 interface SaveClientDialogProps {
   isOpen: boolean;
@@ -96,7 +97,9 @@ export default function SaveClientDialog({
         address: formData.address || null,
         advisor_notes: formData.advisor_notes || null,
         // Store initial intake data in intake_responses
-        intake_responses: initialData
+        intake_responses: initialData,
+        // Store full questionnaire markdown for this client type
+        intake_questionnaire_md: getPreflightQuestionnaire(formData.client_type)
       };
 
       const { data, error } = await supabase

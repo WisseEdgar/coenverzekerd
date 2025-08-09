@@ -75,6 +75,7 @@ export type Database = {
           household_members: number | null
           id: string
           insurance_history: Json | null
+          intake_questionnaire_md: string | null
           intake_responses: Json | null
           kvk_number: string | null
           legal_form: string | null
@@ -108,6 +109,7 @@ export type Database = {
           household_members?: number | null
           id?: string
           insurance_history?: Json | null
+          intake_questionnaire_md?: string | null
           intake_responses?: Json | null
           kvk_number?: string | null
           legal_form?: string | null
@@ -141,6 +143,7 @@ export type Database = {
           household_members?: number | null
           id?: string
           insurance_history?: Json | null
+          intake_questionnaire_md?: string | null
           intake_responses?: Json | null
           kvk_number?: string | null
           legal_form?: string | null
