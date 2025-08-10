@@ -601,7 +601,7 @@ export default function Clients() {
                   </div>
                 </div>
               </CardHeader>
-                { (client.advisor_notes || client.address || (client as any).intake_questionnaire_md) && (
+                { (client.advisor_notes || client.address || getPreflightQuestionnaire(client.client_type)) && (
                   <CardContent>
                     {client.address && (
                       <p className="text-sm text-muted-foreground mb-2">
@@ -613,13 +613,13 @@ export default function Clients() {
                         <strong>Notities:</strong> {client.advisor_notes}
                       </p>
                     )}
-                    {(client as any).intake_questionnaire_md && (
+                    {(client.intake_questionnaire_md || getPreflightQuestionnaire(client.client_type)) && (
                       <details className="mt-3">
                         <summary className="text-sm font-medium cursor-pointer">
                           Vragenlijst (intake)
                         </summary>
                         <div className="mt-2 rounded-md border border-border p-3 bg-muted/30">
-                          <ReactMarkdown>{(client as any).intake_questionnaire_md}</ReactMarkdown>
+                          <ReactMarkdown>{client.intake_questionnaire_md || getPreflightQuestionnaire(client.client_type)}</ReactMarkdown>
                         </div>
                       </details>
                     )}
