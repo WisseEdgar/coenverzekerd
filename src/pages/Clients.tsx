@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Search, Edit, Trash2, User, Building } from "lucide-react";
 import { getPreflightQuestionnaire } from "@/lib/preflightQuestionnaires";
-import ReactMarkdown from "react-markdown";
+
 interface ClientProfile {
   id: string;
   client_type: 'private' | 'business';
@@ -43,7 +43,6 @@ interface ClientProfile {
   preferences?: any;
   intake_responses?: any;
   advisor_notes?: string;
-  intake_questionnaire_md?: string;
   created_at: string;
   updated_at: string;
 }
@@ -583,13 +582,13 @@ export default function Clients() {
                       {client.client_type === 'private' ? <User className="h-5 w-5" /> : <Building className="h-5 w-5" />}
                       {client.client_type === 'private' ? client.full_name || 'Naamloze Klant' : client.company_name || 'Naamloos Bedrijf'}
                     </CardTitle>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Badge variant={client.client_type === 'private' ? 'default' : 'secondary'}>
-                          {client.client_type === 'private' ? 'Particulier' : 'Zakelijk'}
-                        </Badge>
-                        {client.email && <span className="ml-2">{client.email}</span>}
-                        {client.phone && <span className="ml-2">• {client.phone}</span>}
-                      </div>
+                    <CardDescription>
+                      <Badge variant={client.client_type === 'private' ? 'default' : 'secondary'}>
+                        {client.client_type === 'private' ? 'Particulier' : 'Zakelijk'}
+                      </Badge>
+                      {client.email && <span className="ml-2">{client.email}</span>}
+                      {client.phone && <span className="ml-2">• {client.phone}</span>}
+                    </CardDescription>
                   </div>
                   <div className="flex space-x-2">
                     <Button variant="outline" size="sm" onClick={() => handleEdit(client)}>
@@ -601,31 +600,20 @@ export default function Clients() {
                   </div>
                 </div>
               </CardHeader>
-                { (client.advisor_notes || client.address || getPreflightQuestionnaire(client.client_type)) && (
-                  <CardContent>
-                    {client.address && (
-                      <p className="text-sm text-muted-foreground mb-2">
-                        <strong>Adres:</strong> {client.address}
-                      </p>
-                    )}
-                    {client.advisor_notes && (
-                      <p className="text-sm text-muted-foreground">
-                        <strong>Notities:</strong> {client.advisor_notes}
-                      </p>
-                    )}
-                    {(client.intake_questionnaire_md || getPreflightQuestionnaire(client.client_type)) && (
-                      <details className="mt-3">
-                        <summary className="text-sm font-medium cursor-pointer">
-                          Vragenlijst (intake)
-                        </summary>
-                        <div className="mt-2 rounded-md border border-border p-3 bg-muted/30">
-                          <ReactMarkdown>{client.intake_questionnaire_md || getPreflightQuestionnaire(client.client_type)}</ReactMarkdown>
-                        </div>
-                      </details>
-                    )}
-                  </CardContent>
-                )}
-
+              {(client.advisor_notes || client.address) && (
+                <CardContent>
+                  {client.address && (
+                    <p className="text-sm text-muted-foreground mb-2">
+                      <strong>Adres:</strong> {client.address}
+                    </p>
+                  )}
+                  {client.advisor_notes && (
+                    <p className="text-sm text-muted-foreground">
+                      <strong>Notities:</strong> {client.advisor_notes}
+                    </p>
+                  )}
+                </CardContent>
+              )}
             </Card>
           ))}
         </div>
