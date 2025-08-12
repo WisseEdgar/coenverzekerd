@@ -13,7 +13,7 @@ port = 54324
 external_url = "http://localhost:54324"
 
 [functions.coen-chat]
-verify_jwt = false
+verify_jwt = true
 
 [functions.process-document]
 verify_jwt = true

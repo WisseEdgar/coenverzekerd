@@ -48,6 +48,10 @@ export const DocumentUpload = () => {
       );
 
       // Upload file to Supabase Storage
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('Je moet ingelogd zijn om te uploaden.');
+      }
       const fileExt = fileData.file.name.split('.').pop();
       // Sanitize filename by removing special characters and replacing spaces with hyphens
       const sanitizedFileName = fileData.file.name
@@ -57,7 +61,7 @@ export const DocumentUpload = () => {
         .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
         .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
       const fileName = `${Date.now()}-${sanitizedFileName}`;
-      const filePath = `${fileName}`;
+      const filePath = `${user.id}/${fileName}`;
 
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('documents')
