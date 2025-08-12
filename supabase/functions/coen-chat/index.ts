@@ -79,21 +79,19 @@ serve(async (req) => {
       clientContext += `Type: ${clientProfile.client_type === 'private' ? 'Particuliere klant' : 'Zakelijke klant'}\n`;
       if (clientProfile.full_name) clientContext += `Naam: ${clientProfile.full_name}\n`;
       if (clientProfile.company_name) clientContext += `Bedrijf: ${clientProfile.company_name}\n`;
-      if (clientProfile.email) clientContext += `Email: ${clientProfile.email}\n`;
-      if (clientProfile.phone) clientContext += `Telefoon: ${clientProfile.phone}\n`;
+      // Email/phone intentionally omitted for privacy
       if (clientProfile.advisor_notes) clientContext += `Adviseur notities: ${clientProfile.advisor_notes}\n`;
     }
 
     if (intakeData) {
       clientContext += `\n\nINTAKE INFORMATIE:\n`;
       Object.entries(intakeData).forEach(([key, value]) => {
+        if (key === 'email' || key === 'phone') return; // omit PII
         if (value) {
           const labels: any = {
             client_type: 'Klanttype',
             full_name: 'Naam',
             company_name: 'Bedrijfsnaam',
-            email: 'Email',
-            phone: 'Telefoon',
             situation_description: 'Situatie',
             insurance_needs: 'Verzekering behoeften',
             current_coverage: 'Huidige verzekeringen',

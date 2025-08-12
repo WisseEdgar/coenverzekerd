@@ -21,9 +21,10 @@ serve(async (req) => {
   }
 
   try {
-    // Initialize Supabase client
+    // Initialize Supabase client (anon) with user's JWT to enforce RLS
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const authHeader = req.headers.get('Authorization') || '';
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     
     if (!openaiApiKey) {
@@ -34,11 +35,27 @@ serve(async (req) => {
       });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: authHeader } } });
 
+    // Require authenticated user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     const { document }: { document: DocumentUpload } = await req.json();
 
     console.log('Processing document:', document.filename);
+
+    // Enforce user-scoped file path (must be under user's folder)
+    if (!document.file_path || !document.file_path.startsWith(`${user.id}/`)) {
+      return new Response(JSON.stringify({ error: 'Invalid file path' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Create initial processing log
     const { data: logEntry, error: logError } = await supabase
@@ -142,19 +159,8 @@ serve(async (req) => {
       if (insuranceType) {
         insuranceTypeId = insuranceType.id;
       } else {
-        // Create new insurance type
-        const { data: newType } = await supabase
-          .from('insurance_types')
-          .insert({ 
-            name: extractionResult.insurance_type,
-            description: `Auto-detected from document processing`
-          })
-          .select('id')
-          .single();
-        
-        if (newType) {
-          insuranceTypeId = newType.id;
-        }
+        // Not creating new insurance types in user-scoped context for security; leave null and let admins curate.
+        insuranceTypeId = null;
       }
     }
 
@@ -168,19 +174,8 @@ serve(async (req) => {
       if (company) {
         insuranceCompanyId = company.id;
       } else {
-        // Create new company
-        const { data: newCompany } = await supabase
-          .from('insurance_companies')
-          .insert({ 
-            name: extractionResult.company,
-            description: `Auto-detected from document processing`
-          })
-          .select('id')
-          .single();
-        
-        if (newCompany) {
-          insuranceCompanyId = newCompany.id;
-        }
+        // Not creating new insurance companies in user-scoped context for security; leave null and let admins curate.
+        insuranceCompanyId = null;
       }
     }
 
@@ -226,18 +221,7 @@ serve(async (req) => {
     const summaryData = await summaryResponse.json();
     const summary = summaryData.choices[0].message.content;
 
-    // Get user ID from auth header
-    const authHeader = req.headers.get('authorization');
-    const token = authHeader?.replace('Bearer ', '');
-    
-    const { data: { user } } = await supabase.auth.getUser(token);
-    
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // user already retrieved above
 
     // Create document record
     const { data: documentRecord, error: docError } = await supabase
@@ -290,7 +274,6 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       success: true,
-      document: documentRecord,
       processing: {
         extracted_company: extractionResult.company,
         extracted_insurance_type: extractionResult.insurance_type,
