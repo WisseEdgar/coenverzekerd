@@ -91,28 +91,33 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-5-nano-2025-08-07',
         messages: [
           {
             role: 'user',
-            content: prompt + `\n\nNote: Analyze this insurance document based on the filename: ${filePath.split('/').pop()}`
+            content: prompt + `\n\nDocument filename: ${filePath.split('/').pop()}\n\nBased on the filename, please categorize this insurance document and respond with valid JSON only.`
           }
         ],
-        max_tokens: 500,
-        temperature: 0.1
+        max_completion_tokens: 300
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('OpenAI API error details:', errorText);
+      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
     }
 
     const aiResponse = await response.json();
+    console.log('OpenAI response:', aiResponse);
     const content = aiResponse.choices[0]?.message?.content;
 
     if (!content) {
+      console.error('No content in OpenAI response');
       throw new Error('No response from OpenAI');
     }
+
+    console.log('AI response content:', content);
 
     // Parse the JSON response
     let categorization;

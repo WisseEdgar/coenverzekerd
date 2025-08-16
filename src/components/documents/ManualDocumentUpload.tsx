@@ -130,7 +130,7 @@ export const ManualDocumentUpload = () => {
         );
 
         try {
-          const { data: aiResponse } = await supabase.functions.invoke('categorize-document', {
+          const { data: aiResponse, error: functionError } = await supabase.functions.invoke('categorize-document', {
             body: { 
               filePath,
               categorizeCompany: useAiForCompany,
@@ -140,6 +140,12 @@ export const ManualDocumentUpload = () => {
             }
           });
 
+          console.log('Function response:', { aiResponse, functionError });
+
+          if (functionError) {
+            throw new Error(`Function error: ${functionError.message}`);
+          }
+
           if (useAiForCompany && aiResponse?.insurance_company_id) {
             finalCompanyId = aiResponse.insurance_company_id;
           }
@@ -147,8 +153,15 @@ export const ManualDocumentUpload = () => {
             finalTypeId = aiResponse.insurance_type_id;
           }
 
+          console.log('Final IDs:', { finalCompanyId, finalTypeId, useAiForCompany, useAiForType });
+
           if ((useAiForCompany && !aiResponse?.insurance_company_id) || 
               (useAiForType && !aiResponse?.insurance_type_id)) {
+            console.error('Missing AI categorization:', { 
+              useAiForCompany, 
+              useAiForType, 
+              aiResponse 
+            });
             throw new Error('AI kon document niet volledig categoriseren');
           }
         } catch (aiError) {
