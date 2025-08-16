@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
-import { FileText, Upload, CheckCircle, AlertCircle, UserPlus } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { FileText, Upload, CheckCircle, AlertCircle, UserPlus, Bot } from 'lucide-react';
 
 interface UploadedFile {
   file: File;
@@ -36,6 +37,7 @@ export const ManualDocumentUpload = () => {
   const [selectedTypeId, setSelectedTypeId] = useState<string>('');
   const [documentTitle, setDocumentTitle] = useState('');
   const [documentSummary, setDocumentSummary] = useState('');
+  const [useAiCategorization, setUseAiCategorization] = useState(false);
   const { toast } = useToast();
 
   // Load insurance companies and types
@@ -75,10 +77,10 @@ export const ManualDocumentUpload = () => {
     const fileData = uploadedFiles[fileIndex];
     if (!fileData) return;
 
-    if (!selectedCompanyId || !selectedTypeId) {
+    if (!useAiCategorization && (!selectedCompanyId || !selectedTypeId)) {
       toast({
         title: "Velden ontbreken",
-        description: "Selecteer eerst een verzekeringsmaatschappij en type.",
+        description: "Selecteer eerst een verzekeringsmaatschappij en type of schakel AI categorisatie in.",
         variant: "destructive",
       });
       return;
@@ -117,7 +119,46 @@ export const ManualDocumentUpload = () => {
 
       if (uploadError) throw uploadError;
 
-      // Create document record manually
+      // Handle AI categorization or manual selection
+      let finalCompanyId = selectedCompanyId;
+      let finalTypeId = selectedTypeId;
+      
+      if (useAiCategorization) {
+        setUploadedFiles(prev => 
+          prev.map((f, i) => i === fileIndex ? { ...f, progress: 60 } : f)
+        );
+
+        try {
+          const { data: aiResponse } = await supabase.functions.invoke('categorize-document', {
+            body: { filePath }
+          });
+
+          if (aiResponse?.insurance_company_id && aiResponse?.insurance_type_id) {
+            finalCompanyId = aiResponse.insurance_company_id;
+            finalTypeId = aiResponse.insurance_type_id;
+          } else {
+            throw new Error('AI kon document niet categoriseren');
+          }
+        } catch (aiError) {
+          console.error('AI categorization failed:', aiError);
+          toast({
+            title: "AI categorisatie mislukt",
+            description: "Selecteer handmatig een verzekeringsmaatschappij en type.",
+            variant: "destructive",
+          });
+          
+          setUploadedFiles(prev => 
+            prev.map((f, i) => i === fileIndex ? { 
+              ...f, 
+              status: 'error', 
+              error: 'AI categorisatie mislukt - selecteer handmatig'
+            } : f)
+          );
+          return;
+        }
+      }
+
+      // Create document record
       setUploadedFiles(prev => 
         prev.map((f, i) => i === fileIndex ? { ...f, progress: 80 } : f)
       );
@@ -130,8 +171,8 @@ export const ManualDocumentUpload = () => {
           file_path: filePath,
           file_size: fileData.file.size,
           mime_type: fileData.file.type,
-          insurance_company_id: selectedCompanyId,
-          insurance_type_id: selectedTypeId,
+          insurance_company_id: finalCompanyId,
+          insurance_type_id: finalTypeId,
           summary: documentSummary || null,
           uploaded_by: user.id
         });
@@ -211,13 +252,40 @@ export const ManualDocumentUpload = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* AI Toggle */}
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div className="flex items-center gap-3">
+              <Bot className="h-5 w-5 text-primary" />
+              <div>
+                <Label className="text-base font-medium">AI Categorisatie</Label>
+                <p className="text-sm text-muted-foreground">
+                  Laat AI automatisch de verzekeringsmaatschappij en type bepalen
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={useAiCategorization}
+              onCheckedChange={setUseAiCategorization}
+            />
+          </div>
+
           {/* Configuration Form */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="company">Verzekeringsmaatschappij *</Label>
-              <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
+              <Label htmlFor="company">
+                Verzekeringsmaatschappij {!useAiCategorization && '*'}
+              </Label>
+              <Select 
+                value={selectedCompanyId} 
+                onValueChange={setSelectedCompanyId}
+                disabled={useAiCategorization}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecteer maatschappij" />
+                  <SelectValue placeholder={
+                    useAiCategorization 
+                      ? "Wordt automatisch bepaald door AI" 
+                      : "Selecteer maatschappij"
+                  } />
                 </SelectTrigger>
                 <SelectContent>
                   {insuranceCompanies.map((company) => (
@@ -230,10 +298,20 @@ export const ManualDocumentUpload = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="type">Verzekeringstype *</Label>
-              <Select value={selectedTypeId} onValueChange={setSelectedTypeId}>
+              <Label htmlFor="type">
+                Verzekeringstype {!useAiCategorization && '*'}
+              </Label>
+              <Select 
+                value={selectedTypeId} 
+                onValueChange={setSelectedTypeId}
+                disabled={useAiCategorization}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecteer type" />
+                  <SelectValue placeholder={
+                    useAiCategorization 
+                      ? "Wordt automatisch bepaald door AI" 
+                      : "Selecteer type"
+                  } />
                 </SelectTrigger>
                 <SelectContent>
                   {insuranceTypes.map((type) => (
@@ -294,7 +372,7 @@ export const ManualDocumentUpload = () => {
                 <h3 className="text-lg font-semibold">Upload Status</h3>
                 <Button 
                   onClick={uploadAllFiles}
-                  disabled={!uploadedFiles.some(f => f.status === 'pending') || !selectedCompanyId || !selectedTypeId}
+                  disabled={!uploadedFiles.some(f => f.status === 'pending') || (!useAiCategorization && (!selectedCompanyId || !selectedTypeId))}
                 >
                   Alle Bestanden Uploaden
                 </Button>
@@ -328,7 +406,7 @@ export const ManualDocumentUpload = () => {
                       <Button 
                         size="sm" 
                         onClick={() => uploadFile(index)}
-                        disabled={!selectedCompanyId || !selectedTypeId}
+                        disabled={!useAiCategorization && (!selectedCompanyId || !selectedTypeId)}
                         className="mt-2"
                       >
                         Upload
