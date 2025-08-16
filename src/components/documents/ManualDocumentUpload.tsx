@@ -130,6 +130,19 @@ export const ManualDocumentUpload = () => {
         );
 
         try {
+          // Test OpenAI directly first
+          console.log('Testing OpenAI directly...');
+          const { data: testResponse, error: testError } = await supabase.functions.invoke('test-openai', {
+            body: {}
+          });
+          
+          console.log('Test OpenAI response:', { testResponse, testError });
+          
+          if (testError) {
+            throw new Error(`Test OpenAI failed: ${testError.message}`);
+          }
+          
+          // Now try the actual categorize-document function
           const { data: aiResponse, error: functionError } = await supabase.functions.invoke('categorize-document', {
             body: { 
               filePath,
