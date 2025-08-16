@@ -8,82 +8,92 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log('Function started, method:', req.method);
+  
   if (req.method === 'OPTIONS') {
+    console.log('Handling OPTIONS request');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log('Parsing request body...');
+    const requestBody = await req.json();
+    console.log('Request body parsed:', requestBody);
+    
     const { 
       filePath, 
       categorizeCompany = true, 
       categorizeType = true,
       manualCompanyId = null,
       manualTypeId = null
-    } = await req.json();
+    } = requestBody;
+    
+    console.log('Extracted params:', { filePath, categorizeCompany, categorizeType, manualCompanyId, manualTypeId });
     
     if (!filePath) {
       throw new Error('File path is required');
     }
 
-    // Initialize Supabase client
+    console.log('Getting environment variables...');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    
+    console.log('Environment variables status:', {
+      hasSupabaseUrl: !!supabaseUrl,
+      hasSupabaseKey: !!supabaseKey,
+      hasOpenaiApiKey: !!openaiApiKey
+    });
     
     if (!supabaseUrl || !supabaseKey || !openaiApiKey) {
       throw new Error('Missing required environment variables');
     }
     
+    console.log('Creating Supabase client...');
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Download the file from storage
-    const { data: fileData, error: downloadError } = await supabase.storage
-      .from('documents')
-      .download(filePath);
-
-    if (downloadError) {
-      throw new Error(`Failed to download file: ${downloadError.message}`);
-    }
-
-    // Get insurance companies and types from database
+    console.log('Fetching insurance data...');
     const [companiesResult, typesResult] = await Promise.all([
       supabase.from('insurance_companies').select('id, name'),
       supabase.from('insurance_types').select('id, name')
     ]);
 
     if (companiesResult.error || typesResult.error) {
+      console.error('Database errors:', { companiesResult, typesResult });
       throw new Error('Failed to fetch insurance data from database');
     }
 
     const companies = companiesResult.data || [];
     const types = typesResult.data || [];
+    
+    console.log('Insurance data fetched:', { companiesCount: companies.length, typesCount: types.length });
 
-    // Build prompt based on what needs to be categorized
-    let prompt = `Analyze this insurance document and categorize it:\n\n`;
+    // Build simplified prompt for filename-based categorization
+    const filename = filePath.split('/').pop() || '';
+    console.log('Processing filename:', filename);
+    
+    let prompt = `Categorize this insurance document based on its filename: "${filename}"\n\n`;
     
     if (categorizeCompany) {
-      prompt += `1. Determine the insurance company from these options:\n`;
-      prompt += companies.map(c => `- ${c.name} (ID: ${c.id})`).join('\n') + '\n\n';
-    } else if (manualCompanyId) {
-      const company = companies.find(c => c.id === manualCompanyId);
-      prompt += `1. Insurance company is already selected: ${company?.name || 'Unknown'}\n\n`;
+      prompt += `Available insurance companies:\n`;
+      companies.slice(0, 10).forEach(c => prompt += `- ${c.name} (ID: ${c.id})\n`);
+      prompt += '\n';
     }
 
     if (categorizeType) {
-      prompt += `${categorizeCompany ? '2' : '1'}. Determine the type of insurance from these options:\n`;
-      prompt += types.map(t => `- ${t.name} (ID: ${t.id})`).join('\n') + '\n\n';
-    } else if (manualTypeId) {
-      const type = types.find(t => t.id === manualTypeId);
-      prompt += `${categorizeCompany ? '2' : '1'}. Insurance type is already selected: ${type?.name || 'Unknown'}\n\n`;
+      prompt += `Available insurance types:\n`;
+      types.slice(0, 10).forEach(t => prompt += `- ${t.name} (ID: ${t.id})\n`);
+      prompt += '\n';
     }
 
     const responseFields = [];
     if (categorizeCompany) responseFields.push('"insurance_company_id": "uuid-here"');
     if (categorizeType) responseFields.push('"insurance_type_id": "uuid-here"');
 
-    prompt += `Please respond with only a JSON object in this exact format:\n{\n  ${responseFields.join(',\n  ')},\n  "confidence": 0.95,\n  "reasoning": "Brief explanation of your choices"\n}\n\nIf you cannot determine the categories with high confidence, set the confidence below 0.7.`;
+    prompt += `Respond with only valid JSON in this format:\n{\n  ${responseFields.join(',\n  ')},\n  "confidence": 0.95,\n  "reasoning": "Brief explanation"\n}`;
 
-    // Call OpenAI API
+    console.log('Making OpenAI request...');
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -95,40 +105,41 @@ serve(async (req) => {
         messages: [
           {
             role: 'user',
-            content: prompt + `\n\nDocument filename: ${filePath.split('/').pop()}\n\nBased on the filename, please categorize this insurance document and respond with valid JSON only.`
+            content: prompt
           }
         ],
-        max_completion_tokens: 300
+        max_completion_tokens: 200
       }),
     });
 
+    console.log('OpenAI response status:', response.status);
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI API error details:', errorText);
+      console.error('OpenAI API error:', errorText);
       throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
     }
 
     const aiResponse = await response.json();
-    console.log('OpenAI response:', aiResponse);
+    console.log('OpenAI response received');
+    
     const content = aiResponse.choices[0]?.message?.content;
-
     if (!content) {
-      console.error('No content in OpenAI response');
       throw new Error('No response from OpenAI');
     }
 
     console.log('AI response content:', content);
 
-    // Parse the JSON response
     let categorization;
     try {
       categorization = JSON.parse(content);
+      console.log('Parsed categorization:', categorization);
     } catch (parseError) {
-      console.error('Failed to parse OpenAI response:', content);
-      throw new Error('Invalid response format from AI');
+      console.error('Failed to parse JSON:', parseError, 'Content:', content);
+      throw new Error('Invalid JSON response from AI');
     }
 
-    // Build result object with manually provided values
+    // Build result
     const result = {
       insurance_company_id: categorizeCompany ? categorization.insurance_company_id : manualCompanyId,
       insurance_type_id: categorizeType ? categorization.insurance_type_id : manualTypeId,
@@ -136,17 +147,7 @@ serve(async (req) => {
       reasoning: categorization.reasoning || 'Manual selection used'
     };
 
-    // Validate that required fields are present
-    if (!result.insurance_company_id || !result.insurance_type_id) {
-      throw new Error('Missing required categorization data');
-    }
-
-    // Check if confidence is high enough for AI categories
-    if ((categorizeCompany || categorizeType) && categorization.confidence < 0.7) {
-      throw new Error(`AI confidence too low: ${categorization.confidence}`);
-    }
-
-    console.log('Categorization result:', result);
+    console.log('Final result:', result);
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -154,6 +155,8 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in categorize-document function:', error);
+    console.error('Error stack:', error.stack);
+    
     return new Response(
       JSON.stringify({ 
         error: error.message,
