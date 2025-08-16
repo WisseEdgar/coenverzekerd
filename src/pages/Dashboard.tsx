@@ -171,9 +171,7 @@ const Dashboard = () => {
               <Route path="/" element={<div className="max-w-7xl mx-auto space-y-6">
                   {/* Welcome Section */}
                   <div className="mb-8">
-                    <h2 className="text-3xl font-bold text-simon-blue mb-2">
-                      Welkom terug bij Simon
-                    </h2>
+                    <h2 className="text-3xl font-bold text-simon-blue mb-2">Welkom terug bij Coen </h2>
                     <p className="text-muted-foreground">
                       Hier is een overzicht van je recent activiteit
                     </p>
