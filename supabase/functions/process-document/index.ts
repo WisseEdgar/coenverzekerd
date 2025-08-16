@@ -86,9 +86,21 @@ serve(async (req) => {
       });
     }
 
-    // For now, we'll simulate text extraction since we can't run PDF processing libraries
-    // In a real implementation, you would use a PDF library like pdf-parse
-    const extractedText = `Sample extracted text from ${document.filename}. This would contain the actual PDF content in a real implementation.`;
+    // Extract text from PDF using pdf-parse
+    let extractedText = '';
+    try {
+      // Use pdf-parse to extract text from the PDF
+      const pdfParse = await import('https://esm.sh/pdf-parse@1.1.1');
+      const arrayBuffer = await fileData.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      const pdfData = await pdfParse.default(uint8Array);
+      extractedText = pdfData.text || '';
+      console.log('Extracted text length:', extractedText.length);
+    } catch (pdfError) {
+      console.error('Error extracting PDF text:', pdfError);
+      // Fallback to filename-based analysis if PDF parsing fails
+      extractedText = `Document filename: ${document.filename}. PDF text extraction failed, using filename for analysis.`;
+    }
 
     // Use OpenAI to extract company name and insurance type from the text
     const extractionPrompt = `
@@ -150,32 +162,68 @@ serve(async (req) => {
     let insuranceCompanyId = null;
 
     if (extractionResult.insurance_type) {
-      const { data: insuranceType } = await supabase
+      // First try to find existing insurance type
+      const { data: existingType } = await supabase
         .from('insurance_types')
         .select('id')
         .eq('name', extractionResult.insurance_type)
         .single();
 
-      if (insuranceType) {
-        insuranceTypeId = insuranceType.id;
+      if (existingType) {
+        insuranceTypeId = existingType.id;
+        console.log('Found existing insurance type:', extractionResult.insurance_type);
       } else {
-        // Not creating new insurance types in user-scoped context for security; leave null and let admins curate.
-        insuranceTypeId = null;
+        // Create new insurance type if it doesn't exist
+        console.log('Creating new insurance type:', extractionResult.insurance_type);
+        const { data: newType, error: typeError } = await supabase
+          .from('insurance_types')
+          .insert({
+            name: extractionResult.insurance_type,
+            description: `Automatisch aangemaakt voor ${extractionResult.insurance_type}`
+          })
+          .select()
+          .single();
+
+        if (typeError) {
+          console.error('Error creating insurance type:', typeError);
+          insuranceTypeId = null;
+        } else {
+          insuranceTypeId = newType.id;
+          console.log('Created new insurance type with ID:', insuranceTypeId);
+        }
       }
     }
 
     if (extractionResult.company) {
-      const { data: company } = await supabase
+      // First try to find existing insurance company
+      const { data: existingCompany } = await supabase
         .from('insurance_companies')
         .select('id')
         .eq('name', extractionResult.company)
         .single();
 
-      if (company) {
-        insuranceCompanyId = company.id;
+      if (existingCompany) {
+        insuranceCompanyId = existingCompany.id;
+        console.log('Found existing insurance company:', extractionResult.company);
       } else {
-        // Not creating new insurance companies in user-scoped context for security; leave null and let admins curate.
-        insuranceCompanyId = null;
+        // Create new insurance company if it doesn't exist
+        console.log('Creating new insurance company:', extractionResult.company);
+        const { data: newCompany, error: companyError } = await supabase
+          .from('insurance_companies')
+          .insert({
+            name: extractionResult.company,
+            description: `Automatisch aangemaakt voor ${extractionResult.company}`
+          })
+          .select()
+          .single();
+
+        if (companyError) {
+          console.error('Error creating insurance company:', companyError);
+          insuranceCompanyId = null;
+        } else {
+          insuranceCompanyId = newCompany.id;
+          console.log('Created new insurance company with ID:', insuranceCompanyId);
+        }
       }
     }
 
