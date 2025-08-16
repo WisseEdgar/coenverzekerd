@@ -101,14 +101,19 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-nano-2025-08-07',
+        model: 'gpt-4.1-2025-04-14',
         messages: [
+          {
+            role: 'system',
+            content: 'You are a helpful assistant that categorizes insurance documents. Respond only with valid JSON as requested.'
+          },
           {
             role: 'user',
             content: prompt
           }
         ],
-        max_completion_tokens: 200
+        max_tokens: 200,
+        temperature: 0.1
       }),
     });
 
