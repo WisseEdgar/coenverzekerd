@@ -122,9 +122,23 @@ serve(async (req) => {
 
     const aiResponse = await response.json();
     console.log('OpenAI response received');
+    console.log('Full OpenAI response:', JSON.stringify(aiResponse, null, 2));
     
-    const content = aiResponse.choices[0]?.message?.content;
+    const content = aiResponse.choices?.[0]?.message?.content;
+    console.log('Extracted content:', content);
+    console.log('Choices array:', aiResponse.choices);
+    console.log('First choice:', aiResponse.choices?.[0]);
+    console.log('Message object:', aiResponse.choices?.[0]?.message);
+    
     if (!content) {
+      console.error('No content found in OpenAI response');
+      console.error('Response structure:', {
+        hasChoices: !!aiResponse.choices,
+        choicesLength: aiResponse.choices?.length,
+        firstChoice: aiResponse.choices?.[0],
+        hasMessage: !!aiResponse.choices?.[0]?.message,
+        messageContent: aiResponse.choices?.[0]?.message?.content
+      });
       throw new Error('No response from OpenAI');
     }
 
