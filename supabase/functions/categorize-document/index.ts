@@ -13,7 +13,13 @@ serve(async (req) => {
   }
 
   try {
-    const { filePath } = await req.json();
+    const { 
+      filePath, 
+      categorizeCompany = true, 
+      categorizeType = true,
+      manualCompanyId = null,
+      manualTypeId = null
+    } = await req.json();
     
     if (!filePath) {
       throw new Error('File path is required');
@@ -52,28 +58,30 @@ serve(async (req) => {
     const companies = companiesResult.data || [];
     const types = typesResult.data || [];
 
-    // Create prompt for OpenAI
-    const prompt = `
-    Analyze this insurance document and categorize it by determining:
-    1. The insurance company
-    2. The type of insurance
-
-    Available Insurance Companies:
-    ${companies.map(c => `- ${c.name} (ID: ${c.id})`).join('\n')}
-
-    Available Insurance Types:
-    ${types.map(t => `- ${t.name} (ID: ${t.id})`).join('\n')}
-
-    Please respond with only a JSON object in this exact format:
-    {
-      "insurance_company_id": "uuid-here",
-      "insurance_type_id": "uuid-here",
-      "confidence": 0.95,
-      "reasoning": "Brief explanation of why you chose these categories"
+    // Build prompt based on what needs to be categorized
+    let prompt = `Analyze this insurance document and categorize it:\n\n`;
+    
+    if (categorizeCompany) {
+      prompt += `1. Determine the insurance company from these options:\n`;
+      prompt += companies.map(c => `- ${c.name} (ID: ${c.id})`).join('\n') + '\n\n';
+    } else if (manualCompanyId) {
+      const company = companies.find(c => c.id === manualCompanyId);
+      prompt += `1. Insurance company is already selected: ${company?.name || 'Unknown'}\n\n`;
     }
 
-    If you cannot determine the categories with high confidence, set the confidence below 0.7.
-    `;
+    if (categorizeType) {
+      prompt += `${categorizeCompany ? '2' : '1'}. Determine the type of insurance from these options:\n`;
+      prompt += types.map(t => `- ${t.name} (ID: ${t.id})`).join('\n') + '\n\n';
+    } else if (manualTypeId) {
+      const type = types.find(t => t.id === manualTypeId);
+      prompt += `${categorizeCompany ? '2' : '1'}. Insurance type is already selected: ${type?.name || 'Unknown'}\n\n`;
+    }
+
+    const responseFields = [];
+    if (categorizeCompany) responseFields.push('"insurance_company_id": "uuid-here"');
+    if (categorizeType) responseFields.push('"insurance_type_id": "uuid-here"');
+
+    prompt += `Please respond with only a JSON object in this exact format:\n{\n  ${responseFields.join(',\n  ')},\n  "confidence": 0.95,\n  "reasoning": "Brief explanation of your choices"\n}\n\nIf you cannot determine the categories with high confidence, set the confidence below 0.7.`;
 
     // Call OpenAI API
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -126,19 +134,27 @@ serve(async (req) => {
       throw new Error('Invalid response format from AI');
     }
 
-    // Validate the response
-    if (!categorization.insurance_company_id || !categorization.insurance_type_id) {
-      throw new Error('AI could not determine categories');
+    // Build result object with manually provided values
+    const result = {
+      insurance_company_id: categorizeCompany ? categorization.insurance_company_id : manualCompanyId,
+      insurance_type_id: categorizeType ? categorization.insurance_type_id : manualTypeId,
+      confidence: categorization.confidence || 1.0,
+      reasoning: categorization.reasoning || 'Manual selection used'
+    };
+
+    // Validate that required fields are present
+    if (!result.insurance_company_id || !result.insurance_type_id) {
+      throw new Error('Missing required categorization data');
     }
 
-    // Check if confidence is high enough
-    if (categorization.confidence < 0.7) {
+    // Check if confidence is high enough for AI categories
+    if ((categorizeCompany || categorizeType) && categorization.confidence < 0.7) {
       throw new Error(`AI confidence too low: ${categorization.confidence}`);
     }
 
-    console.log('AI categorization result:', categorization);
+    console.log('Categorization result:', result);
 
-    return new Response(JSON.stringify(categorization), {
+    return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
