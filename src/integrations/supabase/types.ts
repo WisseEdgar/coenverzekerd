@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
@@ -471,8 +471,8 @@ export type Database = {
       }
       has_role: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
         }
         Returns: boolean
       }
@@ -483,27 +483,27 @@ export type Database = {
       log_admin_action: {
         Args: {
           _action: string
-          _table_name?: string
-          _record_id?: string
-          _old_values?: Json
           _new_values?: Json
+          _old_values?: Json
+          _record_id?: string
+          _table_name?: string
         }
         Returns: undefined
       }
       search_documents: {
         Args: {
-          query_embedding: string
-          match_threshold?: number
           match_count?: number
+          match_threshold?: number
+          query_embedding: string
         }
         Returns: {
-          id: string
-          title: string
           filename: string
-          summary: string
-          insurance_type: string
+          id: string
           insurance_company: string
+          insurance_type: string
           similarity: number
+          summary: string
+          title: string
         }[]
       }
     }
