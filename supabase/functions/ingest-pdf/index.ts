@@ -74,122 +74,268 @@ async function embedTexts(texts: string[]): Promise<number[][]> {
   return data.data.map((item: any) => item.embedding);
 }
 
-// PDF text extraction using external service
+// Enhanced PDF text extraction with robust parsing
 async function extractTextFromPDF(buffer: ArrayBuffer, filename: string): Promise<PageText[]> {
   console.log(`Starting PDF text extraction for: ${filename}`);
   
+  const uint8Array = new Uint8Array(buffer);
+  let extractedText = '';
+  let extractionMethod = '';
+  
   try {
-    // Use pdf.js or another service for proper PDF text extraction
-    // For now, we'll use a different approach with better error handling
-    
-    // Try to use FormData to send to pdf.js service or similar
-    const formData = new FormData();
-    const blob = new Blob([buffer], { type: 'application/pdf' });
-    formData.append('file', blob, filename);
-    
-    // You can replace with any PDF text extraction service
-    // For this example, I'll implement a more robust fallback
-    
-    const text = await extractTextFallback(buffer);
-    
-    if (!text || text.length < 50) {
-      throw new Error(`Insufficient text extracted from PDF: ${filename}`);
+    // Phase 1: Primary extraction using pdf-parse library
+    try {
+      const pdfParse = await import('https://esm.sh/pdf-parse@1.1.1');
+      const pdfData = await pdfParse.default(uint8Array);
+      extractedText = pdfData.text || '';
+      extractionMethod = 'pdf-parse';
+      console.log(`Primary extraction (${extractionMethod}): ${extractedText.length} characters`);
+    } catch (pdfParseError) {
+      console.warn(`Primary extraction failed: ${pdfParseError.message}, trying fallback`);
+      
+      // Phase 2: Secondary extraction using JSR pdf-parse
+      try {
+        const { default: jsrPdfParse } = await import('https://esm.sh/@lino/pdf-parse@1.0.0');
+        const pdfData = await jsrPdfParse(uint8Array);
+        extractedText = pdfData.text || '';
+        extractionMethod = 'jsr-pdf-parse';
+        console.log(`Secondary extraction (${extractionMethod}): ${extractedText.length} characters`);
+      } catch (jsrError) {
+        console.warn(`Secondary extraction failed: ${jsrError.message}, using advanced fallback`);
+        
+        // Phase 3: Advanced fallback extraction
+        extractedText = await extractTextAdvancedFallback(uint8Array);
+        extractionMethod = 'advanced-fallback';
+        console.log(`Fallback extraction (${extractionMethod}): ${extractedText.length} characters`);
+      }
     }
     
-    // Split into meaningful pages based on content patterns
-    const pages = splitIntoPages(text);
-    console.log(`Successfully extracted ${pages.length} pages from ${filename}`);
+    // Phase 2: Content validation and quality checks
+    const validationResult = await validateExtractedContent(extractedText, filename);
+    if (!validationResult.isValid) {
+      throw new Error(`Content validation failed: ${validationResult.reason}`);
+    }
     
+    // Phase 3: Content preprocessing
+    const processedText = preprocessExtractedText(extractedText);
+    
+    // Phase 4: Intelligent page splitting
+    const pages = splitIntoLogicalPages(processedText, extractionMethod);
+    
+    console.log(`Successfully extracted ${pages.length} pages from ${filename} using ${extractionMethod}`);
     return pages;
-  } catch (error) {
-    console.error(`PDF extraction failed for ${filename}:`, error);
     
-    // Mark extraction as failed - will be handled in main function
+  } catch (error) {
+    console.error(`All PDF extraction methods failed for ${filename}:`, error);
     throw new Error(`PDF text extraction failed: ${error.message}`);
   }
 }
 
-// Improved fallback text extraction
-async function extractTextFallback(buffer: ArrayBuffer): Promise<string> {
-  const uint8Array = new Uint8Array(buffer);
-  
-  // Look for text streams in PDF structure
+// Advanced fallback text extraction with better heuristics
+async function extractTextAdvancedFallback(uint8Array: Uint8Array): Promise<string> {
   const text = new TextDecoder('utf-8', { fatal: false }).decode(uint8Array);
   
-  // Extract text between stream objects
-  const streamPattern = /stream\s*(.*?)\s*endstream/gs;
-  const textPattern = /BT\s*(.*?)\s*ET/gs;
-  const extractedTexts: string[] = [];
+  // Method 1: Extract from PDF text objects with improved patterns
+  const textObjects: string[] = [];
   
-  let match;
-  while ((match = streamPattern.exec(text)) !== null) {
-    const streamContent = match[1];
-    let textMatch;
-    while ((textMatch = textPattern.exec(streamContent)) !== null) {
-      const textContent = textMatch[1]
-        .replace(/Tj|TJ|Td|TD|Tm/g, ' ')
-        .replace(/\[(.*?)\]/g, '$1')
-        .replace(/\((.*?)\)/g, '$1')
-        .replace(/[0-9\.\-\s]{2,}/g, ' ')
+  // Look for different text encoding patterns
+  const patterns = [
+    /BT\s*(.*?)\s*ET/gs,                    // Basic text objects
+    /\((.*?)\)\s*Tj/g,                      // Simple text showing
+    /\[(.*?)\]\s*TJ/g,                      // Text array showing
+    /\/F\d+\s+\d+\s+Tf\s*(.*?)(?=BT|ET|\n)/g, // Font-based text
+  ];
+  
+  patterns.forEach(pattern => {
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+      let textContent = match[1]
+        .replace(/Tj|TJ|Td|TD|Tm|Tf/g, ' ')
+        .replace(/\/F\d+/g, '')
+        .replace(/\[|\]/g, '')
+        .replace(/\(|\)/g, '')
+        .replace(/[0-9\.\-\s]{3,}/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
       
-      if (textContent.length > 5) {
-        extractedTexts.push(textContent);
+      if (textContent.length > 3 && /[a-zA-Z]/.test(textContent)) {
+        textObjects.push(textContent);
       }
     }
-  }
+  });
   
-  const combinedText = extractedTexts.join(' ').trim();
+  let combinedText = textObjects.join(' ').trim();
   
-  if (combinedText.length < 50) {
-    // Last resort: look for any readable text in the entire file
-    const fallbackText = text
-      .replace(/[^\x20-\x7E\n\r]/g, ' ')
+  // Method 2: If still insufficient, try to extract readable characters
+  if (combinedText.length < 100) {
+    console.log('Attempting character-level extraction');
+    const readableChars = text
+      .replace(/[^\x20-\x7E\u00A0-\u017F\u0100-\u024F]/g, ' ') // Keep ASCII + Latin extensions
       .replace(/\s+/g, ' ')
       .split(' ')
-      .filter(word => word.length > 2 && /^[a-zA-Z]/.test(word))
+      .filter(word => word.length > 2 && /[a-zA-Z]/.test(word))
       .join(' ')
       .trim();
     
-    return fallbackText;
+    if (readableChars.length > combinedText.length) {
+      combinedText = readableChars;
+    }
   }
   
   return combinedText;
 }
 
-// Split text into logical pages
-function splitIntoPages(text: string): PageText[] {
-  // Split by common page break indicators
-  const pageBreaks = /(\f|\n\s*\n\s*\n|\bpagina\s+\d+\b|\bbladzijde\s+\d+\b)/gi;
-  const sections = text.split(pageBreaks).filter(section => section.trim().length > 100);
+// Enhanced content validation
+async function validateExtractedContent(text: string, filename: string): Promise<{isValid: boolean, reason?: string}> {
+  // Basic length check
+  if (!text || text.length < 50) {
+    return { isValid: false, reason: `Insufficient content (${text.length} chars)` };
+  }
   
-  if (sections.length === 0) {
-    // If no clear page breaks, split by length
+  // Check for mock/sample data patterns
+  const lowerText = text.toLowerCase();
+  const mockPatterns = [
+    'sample extracted text',
+    'this is a sample',
+    'lorem ipsum',
+    'pdf text extraction failed',
+    'test document',
+    'dummy content'
+  ];
+  
+  for (const pattern of mockPatterns) {
+    if (lowerText.includes(pattern)) {
+      return { isValid: false, reason: `Contains mock data pattern: ${pattern}` };
+    }
+  }
+  
+  // Check text quality - should have reasonable word/sentence structure
+  const words = text.split(/\s+/).filter(w => w.length > 2);
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 10);
+  
+  if (words.length < 20) {
+    return { isValid: false, reason: `Too few meaningful words (${words.length})` };
+  }
+  
+  if (sentences.length < 3) {
+    return { isValid: false, reason: `Too few sentences (${sentences.length})` };
+  }
+  
+  // Check for reasonable character distribution
+  const alphaNumeric = (text.match(/[a-zA-Z0-9]/g) || []).length;
+  const alphaRatio = alphaNumeric / text.length;
+  
+  if (alphaRatio < 0.6) {
+    return { isValid: false, reason: `Low alphanumeric ratio (${(alphaRatio * 100).toFixed(1)}%)` };
+  }
+  
+  return { isValid: true };
+}
+
+// Enhanced text preprocessing
+function preprocessExtractedText(text: string): string {
+  return text
+    // Remove PDF artifacts
+    .replace(/\0/g, '')                     // Null characters
+    .replace(/\f/g, '\n\n')                 // Form feeds to double newlines
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, ' ') // Control characters
+    
+    // Normalize spacing
+    .replace(/[ \t]+/g, ' ')                // Multiple spaces/tabs to single space
+    .replace(/\n\s*\n\s*\n+/g, '\n\n')     // Multiple newlines to double newlines
+    .replace(/^\s+|\s+$/gm, '')             // Trim lines
+    
+    // Fix common PDF extraction issues
+    .replace(/([a-z])([A-Z])/g, '$1 $2')    // Add space between camelCase
+    .replace(/(\w)(\d)/g, '$1 $2')          // Space between letters and numbers
+    .replace(/(\d)([a-zA-Z])/g, '$1 $2')    // Space between numbers and letters
+    
+    // Clean up
+    .trim();
+}
+
+// Intelligent page splitting with better logic
+function splitIntoLogicalPages(text: string, extractionMethod: string): PageText[] {
+  // Method 1: Look for explicit page indicators
+  const pageIndicators = [
+    /\f/g,                                  // Form feed characters
+    /\bpagina\s+\d+\b/gi,                  // Dutch page numbers
+    /\bbladzijde\s+\d+\b/gi,               // Dutch page references
+    /\bpage\s+\d+\b/gi,                    // English page numbers
+    /^\s*\d+\s*$/gm                        // Standalone numbers (potential page numbers)
+  ];
+  
+  let pages: string[] = [];
+  let remainingText = text;
+  
+  // Try to split by page indicators
+  for (const indicator of pageIndicators) {
+    const splits = remainingText.split(indicator);
+    if (splits.length > 1) {
+      pages = splits.filter(split => split.trim().length > 100);
+      break;
+    }
+  }
+  
+  // Method 2: If no clear indicators, split by content patterns
+  if (pages.length <= 1) {
+    const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 50);
+    
+    if (paragraphs.length > 10) {
+      // Group paragraphs into logical pages
+      const wordsPerPage = 1000;
+      pages = [];
+      let currentPage = '';
+      let currentWordCount = 0;
+      
+      for (const paragraph of paragraphs) {
+        const words = paragraph.trim().split(/\s+/).length;
+        
+        if (currentWordCount + words > wordsPerPage && currentPage.length > 200) {
+          pages.push(currentPage.trim());
+          currentPage = paragraph;
+          currentWordCount = words;
+        } else {
+          currentPage += (currentPage ? '\n\n' : '') + paragraph;
+          currentWordCount += words;
+        }
+      }
+      
+      if (currentPage.trim().length > 100) {
+        pages.push(currentPage.trim());
+      }
+    }
+  }
+  
+  // Method 3: Fallback to simple length-based splitting
+  if (pages.length === 0) {
     const wordsPerPage = 800;
-    const words = text.split(' ');
-    const pages: PageText[] = [];
+    const words = text.split(/\s+/);
     
     for (let i = 0; i < words.length; i += wordsPerPage) {
       const pageWords = words.slice(i, i + wordsPerPage);
       const pageText = pageWords.join(' ').trim();
       
-      if (pageText.length > 50) {
-        pages.push({
-          page: Math.floor(i / wordsPerPage) + 1,
-          text: pageText
-        });
+      if (pageText.length > 100) {
+        pages.push(pageText);
       }
     }
-    
-    return pages.length > 0 ? pages : [{ page: 1, text: text }];
   }
   
-  return sections.map((section, index) => ({
+  // Convert to PageText objects
+  const result = pages.map((pageText, index) => ({
     page: index + 1,
-    text: section.trim()
+    text: pageText
   }));
+  
+  // Ensure we have at least one page
+  if (result.length === 0) {
+    result.push({ page: 1, text: text });
+  }
+  
+  return result;
 }
+
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -237,25 +383,24 @@ serve(async (req) => {
       throw new Error('No text content found in document');
     }
 
-    // Check for mock/sample data patterns
-    const allText = pages.map(p => p.text).join(' ').toLowerCase();
-    const isMockData = 
-      allText.includes('sample extracted text') ||
-      allText.includes('this is a sample') ||
-      allText.includes('lorem ipsum') ||
-      allText.includes('pdf text extraction failed') ||
-      allText.length < 100; // Too little content
-
-    if (isMockData) {
-      throw new Error('Document contains insufficient or mock data - extraction failed');
+    // Enhanced content validation with detailed error tracking
+    const allText = pages.map(p => p.text).join(' ');
+    const contentValidation = await validateExtractedContent(allText, body.file_path || 'unknown');
+    
+    if (!contentValidation.isValid) {
+      const detailedError = `Content validation failed: ${contentValidation.reason}`;
+      console.error('Content validation failed:', contentValidation);
+      throw new Error(detailedError);
     }
 
-    // Create chunks from all pages
+    console.log(`Content validation passed, ${allText.length} characters extracted`);
+
+    // Create chunks from all pages with improved chunking
     const allChunks = pages.flatMap(page => chunkText(page.page, page.text));
-    console.log(`Created ${allChunks.length} chunks`);
+    console.log(`Created ${allChunks.length} chunks from ${pages.length} pages`);
 
     if (allChunks.length === 0) {
-      throw new Error('No chunks created from document');
+      throw new Error('No chunks created from document - content may be corrupted');
     }
 
     // Generate embeddings in batches to avoid token limits
