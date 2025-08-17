@@ -208,7 +208,7 @@ export function InsuranceDocumentUpload() {
       const { data: processResult, error: processError } = await supabase.functions.invoke('ingest-pdf', {
         body: {
           file_path: filePath,
-          product_id: document.id
+          document_id: document.id
         }
       });
 
