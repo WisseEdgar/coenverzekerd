@@ -272,11 +272,35 @@ Content: ${result.text.substring(0, 1000)}${result.text.length > 1000 ? '...' : 
 
     console.log(`Generated context with ${finalResults.length} passages`);
 
-    // Step 4: Generate answer using LLM
-    console.log('Generating answer...');
-    const answer = await generateAnswer(query, context, userContext);
+    // Step 4: Check if we have meaningful content
+    const hasReadableContent = finalResults.some(result => 
+      !result.text.includes('PDF text extraction failed') && 
+      result.text.length > 100
+    );
 
-    // Step 5: Log the query for analytics
+    // Step 5: Generate the answer with improved context
+    console.log('Generating answer...');
+    let answer;
+    
+    if (!hasReadableContent && finalResults.length > 0) {
+      // We found documents but they have extraction failures
+      const failedDocs = finalResults.map(r => r.document_title).filter((v, i, a) => a.indexOf(v) === i);
+      answer = `Ik heb wel relevante documenten gevonden (${failedDocs.join(', ')}), maar de tekstinhoud is niet leesbaar door problemen met de PDF-extractie. 
+
+**Gevonden documenten met extractieproblemen:**
+${failedDocs.map(doc => `• ${doc}`).join('\n')}
+
+**Aanbevelingen:**
+1. Deze documenten moeten opnieuw verwerkt worden met verbeterde PDF-extractie
+2. Controleer of de originale PDF-bestanden nog beschikbaar zijn
+3. Overweeg handmatige tekst-extractie voor belangrijke documenten
+
+Zodra de documenten succesvol zijn herverwerkt, kan ik je gedetailleerde informatie geven over de beschikbare opties en dekkingen.`;
+    } else {
+      answer = await generateAnswer(query, context, userContext);
+    }
+
+    // Step 6: Log the query for analytics
     try {
       await supabase.from('queries').insert({
         user_id: null, // Could get from auth if needed
@@ -297,13 +321,15 @@ Content: ${result.text.substring(0, 1000)}${result.text.length > 1000 ? '...' : 
       document_title: result.document_title,
       product_name: result.product_name,
       insurer_name: result.insurer_name,
-      version_label: result.version_label
+      version_label: result.version_label,
+      has_extraction_failure: result.text.includes('PDF text extraction failed')
     }));
 
     return new Response(JSON.stringify({
       answer,
       passages,
-      hasResults: true,
+      hasResults: finalResults.length > 0,
+      hasReadableContent,
       queryId: crypto.randomUUID() // Could be used for tracking
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
