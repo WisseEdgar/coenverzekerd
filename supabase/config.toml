@@ -23,3 +23,6 @@ verify_jwt = true
 
 [functions.chat-answer]
 verify_jwt = true
+
+[functions.migrate-documents]
+verify_jwt = true

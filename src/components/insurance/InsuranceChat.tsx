@@ -431,14 +431,14 @@ ${clientContext.insurance_needs ? `Verzekeringsbehoefte: ${clientContext.insuran
                   value={searchFilters.line_of_business || ''} 
                   onValueChange={(value) => setSearchFilters(prev => ({ 
                     ...prev, 
-                    line_of_business: value || undefined 
+                    line_of_business: value === "all" ? undefined : value 
                   }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Verzekeringssoort" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Alle soorten</SelectItem>
+                    <SelectItem value="all">Alle soorten</SelectItem>
                     {INSURANCE_LINES.map((line) => (
                       <SelectItem key={line} value={line}>{line}</SelectItem>
                     ))}
@@ -451,14 +451,14 @@ ${clientContext.insurance_needs ? `Verzekeringsbehoefte: ${clientContext.insuran
                   value={searchFilters.insurer || ''} 
                   onValueChange={(value) => setSearchFilters(prev => ({ 
                     ...prev, 
-                    insurer: value || undefined 
+                    insurer: value === "all" ? undefined : value 
                   }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Verzekeraar" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Alle verzekeraars</SelectItem>
+                    <SelectItem value="all">Alle verzekeraars</SelectItem>
                     {insurers?.map((insurer) => (
                       <SelectItem key={insurer.id} value={insurer.name}>{insurer.name}</SelectItem>
                     ))}

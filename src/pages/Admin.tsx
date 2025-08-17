@@ -1,5 +1,6 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Building2, FileText, RefreshCw, Zap, FileSearch2, MessageSquare, Database, Settings, Building, RotateCcw, Shield } from 'lucide-react';
 import { AdminGuard } from '@/components/admin/AdminGuard';
 import { InsuranceTypesManager } from '@/components/admin/InsuranceTypesManager';
 import { InsuranceCompaniesManager } from '@/components/admin/InsuranceCompaniesManager';
@@ -8,7 +9,7 @@ import { DocumentReassignmentManager } from '@/components/admin/DocumentReassign
 import { BatchProcessEmbeddings } from '@/components/admin/BatchProcessEmbeddings';
 import { AuditLogViewer } from '@/components/admin/AuditLogViewer';
 import { MessageFeedbackViewer } from '@/components/admin/MessageFeedbackViewer';
-import { Settings, FileText, Building, RotateCcw, Shield, MessageSquare, RefreshCw, Zap } from 'lucide-react';
+import DocumentMigrationManager from '@/components/admin/DocumentMigrationManager';
 
 export default function Admin() {
   return (
@@ -25,7 +26,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="types" className="w-full">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="types" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Verzekeringtypes
@@ -53,6 +54,10 @@ export default function Admin() {
             <TabsTrigger value="feedback" className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
               Message Feedback
+            </TabsTrigger>
+            <TabsTrigger value="migration" className="flex items-center gap-2">
+              <Database className="h-4 w-4" />
+              Document Migratie
             </TabsTrigger>
           </TabsList>
           
@@ -82,6 +87,10 @@ export default function Admin() {
           
           <TabsContent value="feedback" className="space-y-6">
             <MessageFeedbackViewer />
+          </TabsContent>
+          
+          <TabsContent value="migration" className="space-y-6">
+            <DocumentMigrationManager />
           </TabsContent>
         </Tabs>
       </div>
