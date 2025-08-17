@@ -17,16 +17,51 @@ interface LegacyDocument {
   summary?: string;
   extracted_text?: string;
   created_at: string;
+  insurance_types?: { id: string; name: string };
+  insurance_companies?: { id: string; name: string };
 }
 
-interface InsuranceType {
-  id: string;
-  name: string;
-}
+// Mapping from insurance types to line of business
+const INSURANCE_TYPE_MAPPING: Record<string, string> = {
+  'Autoverzekering': 'motor',
+  'Woonhuisverzekering': 'property',
+  'Inboedelverzekering': 'property',
+  'Reisverzekering': 'travel',
+  'Zorgverzekering': 'health',
+  'Levensverzekering': 'life',
+  'Aansprakelijkheidsverzekering': 'liability',
+  'Rechtsbijstandverzekering': 'legal',
+  'Ongevallenverzekering': 'accident',
+  'Bedrijfsverzekering': 'commercial',
+  'Cyberverzekering': 'cyber',
+  'Gebouwenverzekering': 'property',
+  'Machines': 'commercial',
+  'Default': 'general'
+};
 
-interface InsuranceCompany {
-  id: string;
-  name: string;
+function mapInsuranceTypeToLineOfBusiness(insuranceType: string): string {
+  // Try exact match first
+  if (INSURANCE_TYPE_MAPPING[insuranceType]) {
+    return INSURANCE_TYPE_MAPPING[insuranceType];
+  }
+  
+  // Try partial matches
+  const lowerType = insuranceType.toLowerCase();
+  if (lowerType.includes('auto') || lowerType.includes('motor')) return 'motor';
+  if (lowerType.includes('woning') || lowerType.includes('huis') || lowerType.includes('gebouw')) return 'property';
+  if (lowerType.includes('inboedel')) return 'property';
+  if (lowerType.includes('reis')) return 'travel';
+  if (lowerType.includes('zorg') || lowerType.includes('health')) return 'health';
+  if (lowerType.includes('leven') || lowerType.includes('life')) return 'life';
+  if (lowerType.includes('aansprakelijk') || lowerType.includes('liability')) return 'liability';
+  if (lowerType.includes('rechtsbijstand') || lowerType.includes('legal')) return 'legal';
+  if (lowerType.includes('ongeval') || lowerType.includes('accident')) return 'accident';
+  if (lowerType.includes('bedrijf') || lowerType.includes('commercial')) return 'commercial';
+  if (lowerType.includes('cyber')) return 'cyber';
+  if (lowerType.includes('machine')) return 'commercial';
+  
+  // Default fallback
+  return 'general';
 }
 
 serve(async (req) => {
@@ -120,55 +155,110 @@ serve(async (req) => {
       for (const doc of legacyDocs) {
         try {
           console.log(`Migrating document: ${doc.title}`);
+          console.log(`Insurance type: ${doc.insurance_types?.name || 'None'}`);
+          console.log(`Insurance company: ${doc.insurance_companies?.name || 'None'}`);
           
           // Create or find insurer
           let insurerId = null;
+          let insurerName = 'Unknown Insurer';
+          
           if (doc.insurance_companies?.name) {
-            const { data: existingInsurer } = await supabase
+            insurerName = doc.insurance_companies.name;
+            console.log(`Looking for insurer: ${insurerName}`);
+            
+            const { data: existingInsurer, error: findInsurerError } = await supabase
               .from('insurers')
               .select('id')
-              .eq('name', doc.insurance_companies.name)
-              .single();
+              .eq('name', insurerName)
+              .maybeSingle();
+
+            if (findInsurerError) {
+              console.error(`Error finding insurer: ${findInsurerError.message}`);
+            }
 
             if (existingInsurer) {
               insurerId = existingInsurer.id;
+              console.log(`Found existing insurer: ${insurerId}`);
             } else {
+              console.log(`Creating new insurer: ${insurerName}`);
               const { data: newInsurer, error: insurerError } = await supabase
                 .from('insurers')
                 .insert({
-                  name: doc.insurance_companies.name,
+                  name: insurerName,
                   kvk: null,
                   website: null
                 })
                 .select('id')
                 .single();
 
-              if (insurerError) throw insurerError;
+              if (insurerError) {
+                console.error(`Error creating insurer: ${insurerError.message}`);
+                throw insurerError;
+              }
               insurerId = newInsurer.id;
+              console.log(`Created new insurer: ${insurerId}`);
+            }
+          } else {
+            // Create default insurer if none exists
+            console.log(`No insurance company found, creating default insurer`);
+            const { data: defaultInsurer, error: defaultInsurerError } = await supabase
+              .from('insurers')
+              .select('id')
+              .eq('name', 'Unknown Insurer')
+              .maybeSingle();
+
+            if (defaultInsurer) {
+              insurerId = defaultInsurer.id;
+            } else {
+              const { data: newDefaultInsurer, error: createDefaultError } = await supabase
+                .from('insurers')
+                .insert({
+                  name: 'Unknown Insurer',
+                  kvk: null,
+                  website: null
+                })
+                .select('id')
+                .single();
+
+              if (createDefaultError) {
+                console.error(`Error creating default insurer: ${createDefaultError.message}`);
+                throw createDefaultError;
+              }
+              insurerId = newDefaultInsurer.id;
             }
           }
 
           // Create or find product
           let productId = null;
-          if (insurerId && doc.insurance_types?.name) {
-            const productName = `${doc.insurance_companies.name} - ${doc.insurance_types.name}`;
+          if (insurerId) {
+            const insuranceTypeName = doc.insurance_types?.name || 'Unknown';
+            const lineOfBusiness = mapInsuranceTypeToLineOfBusiness(insuranceTypeName);
+            const productName = `${insurerName} - ${insuranceTypeName}`;
             
-            const { data: existingProduct } = await supabase
+            console.log(`Looking for product: ${productName} with line of business: ${lineOfBusiness}`);
+            
+            const { data: existingProduct, error: findProductError } = await supabase
               .from('products')
               .select('id')
               .eq('name', productName)
               .eq('insurer_id', insurerId)
-              .single();
+              .maybeSingle();
+
+            if (findProductError) {
+              console.error(`Error finding product: ${findProductError.message}`);
+            }
 
             if (existingProduct) {
               productId = existingProduct.id;
+              console.log(`Found existing product: ${productId}`);
             } else {
+              console.log(`Creating new product: ${productName}`);
               const { data: newProduct, error: productError } = await supabase
                 .from('products')
                 .insert({
                   name: productName,
                   insurer_id: insurerId,
-                  line_of_business: doc.insurance_types.name,
+                  line_of_business: lineOfBusiness,
                   version_label: 'Legacy Import',
                   jurisdiction: 'NL',
                   language: 'nl'
@@ -176,12 +266,26 @@ serve(async (req) => {
                 .select('id')
                 .single();
 
-              if (productError) throw productError;
+              if (productError) {
+                console.error(`Error creating product: ${productError.message}`);
+                console.error(`Product data:`, {
+                  name: productName,
+                  insurer_id: insurerId,
+                  line_of_business: lineOfBusiness
+                });
+                throw productError;
+              }
               productId = newProduct.id;
+              console.log(`Created new product: ${productId}`);
             }
           }
 
+          if (!productId) {
+            throw new Error(`Could not create or find product for document ${doc.title}`);
+          }
+
           // Create documents_v2 entry
+          console.log(`Creating documents_v2 entry for: ${doc.title}`);
           const { data: newDoc, error: docError } = await supabase
             .from('documents_v2')
             .insert({
@@ -196,7 +300,18 @@ serve(async (req) => {
             .select('id')
             .single();
 
-          if (docError) throw docError;
+          if (docError) {
+            console.error(`Error creating documents_v2 entry: ${docError.message}`);
+            console.error(`Document data:`, {
+              product_id: productId,
+              filename: doc.filename,
+              title: doc.title,
+              file_path: doc.file_path
+            });
+            throw docError;
+          }
+
+          console.log(`Created documents_v2 entry: ${newDoc.id}`);
 
           // If we have extracted text, call ingest-pdf to process it
           if (doc.extracted_text && doc.extracted_text.length > 100) {
