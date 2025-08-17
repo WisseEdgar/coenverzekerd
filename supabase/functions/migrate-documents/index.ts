@@ -126,6 +126,7 @@ serve(async (req) => {
       }
 
       let legacyDocs = allLegacyDocs || [];
+      console.log(`Retrieved ${legacyDocs.length} legacy documents from database`);
 
       if (skip_processed && legacyDocs.length > 0) {
         // Get processed file paths and filter in memory
@@ -136,11 +137,13 @@ serve(async (req) => {
         const processedPaths = new Set(processedIds?.map(d => d.file_path) || []);
         console.log(`Found ${processedPaths.size} already processed documents`);
         
+        const originalCount = legacyDocs.length;
         legacyDocs = legacyDocs.filter(doc => !processedPaths.has(doc.file_path));
-        console.log(`Filtered to ${legacyDocs.length} unprocessed documents`);
+        console.log(`Filtered from ${originalCount} to ${legacyDocs.length} unprocessed documents`);
         
         // Take only the batch size needed
         legacyDocs = legacyDocs.slice(0, batch_size);
+        console.log(`Taking batch of ${legacyDocs.length} documents to process`);
       }
 
 
