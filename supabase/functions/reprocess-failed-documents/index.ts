@@ -47,22 +47,30 @@ serve(async (req) => {
         throw new Error(`Error querying failed chunks: ${error.message}`);
       }
 
-      // Group by document
+      // Group by document and get total chunks
       const failedDocs = new Map();
-      failedChunks?.forEach(chunk => {
+      
+      for (const chunk of failedChunks || []) {
         const doc = chunk.documents_v2;
         if (!failedDocs.has(doc.id)) {
+          // Get total chunks for this document
+          const { data: totalChunksData } = await supabase
+            .from('chunks')
+            .select('id', { count: 'exact' })
+            .eq('document_id', doc.id);
+          
           failedDocs.set(doc.id, {
-            id: doc.id,
+            document_id: doc.id, // Changed from 'id' to 'document_id'
             title: doc.title,
             filename: doc.filename,
             file_path: doc.file_path,
             processing_status: doc.processing_status,
-            failed_chunks: 0
+            failed_chunks: 0,
+            total_chunks: totalChunksData?.length || 0
           });
         }
         failedDocs.get(doc.id).failed_chunks++;
-      });
+      }
 
       return new Response(JSON.stringify({
         success: true,
