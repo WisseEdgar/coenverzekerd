@@ -104,11 +104,8 @@ async function extractTextFromPDF(buffer: ArrayBuffer, filename: string): Promis
   } catch (error) {
     console.error(`PDF extraction failed for ${filename}:`, error);
     
-    // Instead of failing completely, create a meaningful error chunk
-    return [{
-      page: 1,
-      text: `Document filename: ${filename}. PDF text extraction failed with error: ${error.message}. This document requires manual text extraction or re-upload in a different format.`
-    }];
+    // Mark extraction as failed - will be handled in main function
+    throw new Error(`PDF text extraction failed: ${error.message}`);
   }
 }
 
@@ -240,6 +237,19 @@ serve(async (req) => {
       throw new Error('No text content found in document');
     }
 
+    // Check for mock/sample data patterns
+    const allText = pages.map(p => p.text).join(' ').toLowerCase();
+    const isMockData = 
+      allText.includes('sample extracted text') ||
+      allText.includes('this is a sample') ||
+      allText.includes('lorem ipsum') ||
+      allText.includes('pdf text extraction failed') ||
+      allText.length < 100; // Too little content
+
+    if (isMockData) {
+      throw new Error('Document contains insufficient or mock data - extraction failed');
+    }
+
     // Create chunks from all pages
     const allChunks = pages.flatMap(page => chunkText(page.page, page.text));
     console.log(`Created ${allChunks.length} chunks`);
@@ -302,7 +312,7 @@ serve(async (req) => {
 
     console.log(`Inserted ${embeddingsToInsert.length} embeddings`);
 
-    // Update document processing status
+    // Update document processing status to completed
     const { error: updateError } = await supabase
       .from('documents_v2')
       .update({ 
@@ -327,6 +337,30 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in ingest-pdf function:', error);
+    
+    // Mark document as failed when processing fails
+    if (body?.document_id && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        await supabase
+          .from('documents_v2')
+          .update({ processing_status: 'failed' })
+          .eq('id', body.document_id);
+        
+        // Create a failed extraction chunk for detection
+        const { data: failedChunk } = await supabase
+          .from('chunks')
+          .insert({
+            document_id: body.document_id,
+            page: 1,
+            text: `PDF text extraction failed: ${error.message}`,
+            token_count: 10,
+            metadata: { extraction_failed: true }
+          });
+      } catch (updateError) {
+        console.warn('Could not update document status to failed:', updateError);
+      }
+    }
     
     return new Response(JSON.stringify({
       error: error.message,

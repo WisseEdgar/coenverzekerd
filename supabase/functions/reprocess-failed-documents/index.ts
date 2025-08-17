@@ -26,7 +26,7 @@ serve(async (req) => {
     const { action = 'list', document_ids = [] } = body;
 
     if (action === 'list') {
-      // Find all documents with failed text extraction
+      // Find all documents with failed text extraction (multiple patterns)
       const { data: failedChunks, error } = await supabase
         .from('chunks')
         .select(`
@@ -41,15 +41,26 @@ serve(async (req) => {
             processing_status
           )
         `)
-        .like('text', '%PDF text extraction failed%');
+        .or('text.ilike.%PDF text extraction failed%,text.ilike.%Sample extracted text%,text.ilike.%lorem ipsum%,text.ilike.%this is a sample%');
+
+      // Also find documents with failed processing status
+      const { data: failedStatusDocs, error: statusError } = await supabase
+        .from('documents_v2')
+        .select('id, title, filename, file_path, processing_status')
+        .eq('processing_status', 'failed');
 
       if (error) {
-        throw new Error(`Error querying failed chunks: ${error.message}`);
+        console.warn('Error querying failed chunks:', error);
+      }
+      
+      if (statusError) {
+        console.warn('Error querying failed status docs:', statusError);
       }
 
       // Group by document and get total chunks
       const failedDocs = new Map();
       
+      // Process chunks with failed content
       for (const chunk of failedChunks || []) {
         const doc = chunk.documents_v2;
         if (!failedDocs.has(doc.id)) {
@@ -60,16 +71,82 @@ serve(async (req) => {
             .eq('document_id', doc.id);
           
           failedDocs.set(doc.id, {
-            document_id: doc.id, // Changed from 'id' to 'document_id'
+            document_id: doc.id,
             title: doc.title,
             filename: doc.filename,
             file_path: doc.file_path,
             processing_status: doc.processing_status,
             failed_chunks: 0,
-            total_chunks: totalChunksData?.length || 0
+            total_chunks: totalChunksData?.length || 0,
+            failure_reason: 'Content extraction failed'
           });
         }
         failedDocs.get(doc.id).failed_chunks++;
+      }
+      
+      // Process documents with failed status (may have no chunks yet)
+      for (const doc of failedStatusDocs || []) {
+        if (!failedDocs.has(doc.id)) {
+          const { data: totalChunksData } = await supabase
+            .from('chunks')
+            .select('id', { count: 'exact' })
+            .eq('document_id', doc.id);
+          
+          failedDocs.set(doc.id, {
+            document_id: doc.id,
+            title: doc.title,
+            filename: doc.filename,
+            file_path: doc.file_path,
+            processing_status: doc.processing_status,
+            failed_chunks: 0,
+            total_chunks: totalChunksData?.length || 0,
+            failure_reason: 'Processing failed'
+          });
+        }
+      }
+
+      // Also check for documents with insufficient content (very short chunks)
+      const { data: shortContentDocs, error: shortError } = await supabase
+        .from('chunks')
+        .select(`
+          document_id,
+          documents_v2!inner(id, title, filename, file_path, processing_status)
+        `)
+        .lt('char_length(text)', 100);
+
+      if (!shortError && shortContentDocs) {
+        const docGroups = new Map();
+        shortContentDocs.forEach(chunk => {
+          const docId = chunk.document_id;
+          if (!docGroups.has(docId)) {
+            docGroups.set(docId, { doc: chunk.documents_v2, count: 0 });
+          }
+          docGroups.get(docId).count++;
+        });
+
+        // If more than 80% of chunks are too short, consider it failed
+        for (const [docId, info] of docGroups) {
+          if (!failedDocs.has(docId)) {
+            const { data: totalChunksData } = await supabase
+              .from('chunks')
+              .select('id', { count: 'exact' })
+              .eq('document_id', docId);
+            
+            const totalChunks = totalChunksData?.length || 0;
+            if (totalChunks > 0 && (info.count / totalChunks) > 0.8) {
+              failedDocs.set(docId, {
+                document_id: docId,
+                title: info.doc.title,
+                filename: info.doc.filename,
+                file_path: info.doc.file_path,
+                processing_status: info.doc.processing_status,
+                failed_chunks: info.count,
+                total_chunks: totalChunks,
+                failure_reason: 'Insufficient content extracted'
+              });
+            }
+          }
+        }
       }
 
       return new Response(JSON.stringify({
