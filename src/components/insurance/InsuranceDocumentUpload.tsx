@@ -212,7 +212,14 @@ export function InsuranceDocumentUpload() {
         }
       });
 
-      if (processError) throw processError;
+      if (processError) {
+        console.error('Edge function error:', processError);
+        throw new Error(`Document processing failed: ${processError.message || 'Unknown edge function error'}`);
+      }
+
+      if (!processResult?.success) {
+        throw new Error(`PDF processing failed: ${processResult?.error || 'Unknown processing error'}`);
+      }
 
       setState(prev => ({ 
         ...prev, 
@@ -244,15 +251,34 @@ export function InsuranceDocumentUpload() {
 
     } catch (error: any) {
       console.error('Upload error:', error);
+      
+      // Provide more specific error messages
+      let errorMessage = 'Er is een fout opgetreden tijdens het uploaden.';
+      let errorTitle = "Upload mislukt";
+      
+      if (error.message?.includes('OpenAI API key')) {
+        errorMessage = 'OpenAI API sleutel is niet geconfigureerd. Neem contact op met de beheerder.';
+        errorTitle = "Configuratiefout";
+      } else if (error.message?.includes('PDF text extraction failed')) {
+        errorMessage = 'PDF tekst extractie mislukt. Controleer of het PDF bestand leesbare tekst bevat.';
+        errorTitle = "PDF verwerking mislukt";
+      } else if (error.message?.includes('Document processing failed')) {
+        errorMessage = 'Document verwerking mislukt. Probeer het opnieuw of neem contact op met de beheerder.';
+        errorTitle = "Verwerkingsfout";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       setState(prev => ({ 
         ...prev, 
         uploading: false, 
         processing: false,
-        error: error.message || 'Upload mislukt'
+        error: errorMessage
       }));
+      
       toast({
-        title: "Upload mislukt",
-        description: error.message || 'Er is een fout opgetreden tijdens het uploaden.',
+        title: errorTitle,
+        description: errorMessage,
         variant: "destructive"
       });
     }
