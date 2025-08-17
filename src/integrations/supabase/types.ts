@@ -865,6 +865,21 @@ export type Database = {
         }
         Returns: undefined
       }
+      search_chunks_cosine: {
+        Args: { insurer_id?: string; k?: number; lob?: string; qvec: string }
+        Returns: {
+          document_id: string
+          document_title: string
+          id: string
+          insurer_name: string
+          metadata: Json
+          page: number
+          product_name: string
+          similarity: number
+          text: string
+          version_label: string
+        }[]
+      }
       search_documents: {
         Args: {
           match_count?: number
