@@ -50,7 +50,16 @@ export function InsuranceDocumentsList() {
       let query = supabase
         .from('documents_v2')
         .select(`
-          *,
+          id,
+          title,
+          filename,
+          file_path,
+          processing_status,
+          version_label,
+          version_date,
+          pages,
+          file_size,
+          created_at,
           products!inner (
             id,
             name,
