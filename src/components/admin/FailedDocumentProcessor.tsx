@@ -41,6 +41,7 @@ export function FailedDocumentProcessor() {
 
       if (error) throw error;
 
+      console.log('Failed documents loaded:', data.failed_documents);
       setFailedDocuments(data.failed_documents || []);
       toast({
         title: "Documenten geladen",
@@ -60,6 +61,7 @@ export function FailedDocumentProcessor() {
 
   const handleDocumentSelection = (documentId: string, checked: boolean | 'indeterminate') => {
     console.log('handleDocumentSelection called:', { documentId, checked, type: typeof checked });
+    console.log('Current selectedDocuments:', selectedDocuments);
     
     // Only treat explicit true as checked, everything else as unchecked
     const isChecked = checked === true;
@@ -202,23 +204,27 @@ export function FailedDocumentProcessor() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {failedDocuments.map((doc) => (
-                <div key={doc.document_id} className="flex items-center space-x-3 p-3 border rounded-lg">
-                  <Checkbox
-                    checked={selectedDocuments.includes(doc.document_id)}
-                    onCheckedChange={(checked) => handleDocumentSelection(doc.document_id, checked)}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium truncate">{doc.title}</p>
-                      <Badge variant="destructive" className="text-xs">
-                        {doc.failed_chunks}/{doc.total_chunks} chunks gefaald
-                      </Badge>
+              {failedDocuments.map((doc) => {
+                console.log('Rendering document:', doc);
+                return (
+                  <div key={doc.document_id || `doc-${Math.random()}`} className="flex items-center space-x-3 p-3 border rounded-lg">
+                    <Checkbox
+                      checked={selectedDocuments.includes(doc.document_id)}
+                      onCheckedChange={(checked) => handleDocumentSelection(doc.document_id, checked)}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium truncate">{doc.title}</p>
+                        <Badge variant="destructive" className="text-xs">
+                          {doc.failed_chunks}/{doc.total_chunks} chunks gefaald
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground truncate">{doc.filename}</p>
+                      <p className="text-xs text-muted-foreground">ID: {doc.document_id}</p>
                     </div>
-                    <p className="text-sm text-muted-foreground truncate">{doc.filename}</p>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
