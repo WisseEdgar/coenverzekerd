@@ -463,6 +463,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_documents_without_embeddings: {
+        Args: { batch_size?: number }
+        Returns: {
+          extracted_text: string
+          file_path: string
+          filename: string
+          id: string
+          title: string
+        }[]
+      }
       get_user_roles: {
         Args: { _user_id?: string }
         Returns: {

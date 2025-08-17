@@ -3,11 +3,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AdminGuard } from '@/components/admin/AdminGuard';
 import { InsuranceTypesManager } from '@/components/admin/InsuranceTypesManager';
 import { InsuranceCompaniesManager } from '@/components/admin/InsuranceCompaniesManager';
-import { DocumentReassignmentManager } from '@/components/admin/DocumentReassignmentManager';
 import { DocumentReprocessManager } from '@/components/admin/DocumentReprocessManager';
+import { DocumentReassignmentManager } from '@/components/admin/DocumentReassignmentManager';
+import { BatchProcessEmbeddings } from '@/components/admin/BatchProcessEmbeddings';
 import { AuditLogViewer } from '@/components/admin/AuditLogViewer';
 import { MessageFeedbackViewer } from '@/components/admin/MessageFeedbackViewer';
-import { Settings, FileText, Building, RotateCcw, Shield, MessageSquare, RefreshCw } from 'lucide-react';
+import { Settings, FileText, Building, RotateCcw, Shield, MessageSquare, RefreshCw, Zap } from 'lucide-react';
 
 export default function Admin() {
   return (
@@ -24,7 +25,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="types" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="types" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Verzekeringtypes
@@ -40,6 +41,10 @@ export default function Admin() {
             <TabsTrigger value="reprocess" className="flex items-center gap-2">
               <RefreshCw className="h-4 w-4" />
               Document Herverwerking
+            </TabsTrigger>
+            <TabsTrigger value="embeddings" className="flex items-center gap-2">
+              <Zap className="h-4 w-4" />
+              AI Processing
             </TabsTrigger>
             <TabsTrigger value="audit" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
@@ -65,6 +70,10 @@ export default function Admin() {
           
           <TabsContent value="reprocess" className="space-y-6">
             <DocumentReprocessManager />
+          </TabsContent>
+          
+          <TabsContent value="embeddings" className="space-y-6">
+            <BatchProcessEmbeddings />
           </TabsContent>
           
           <TabsContent value="audit" className="space-y-6">
