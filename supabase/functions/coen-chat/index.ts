@@ -52,23 +52,23 @@ serve(async (req) => {
     const embeddingData = await embeddingResponse.json();
     const queryEmbedding = embeddingData.data[0].embedding;
 
-    // Search for relevant documents using simple text search (vector search will be added later)
+    // Search for relevant documents using vector similarity
     console.log('Searching for relevant documents...');
-    const { data: docs } = await supabase
-      .from('documents')
-      .select(`
-        title, 
-        summary,
-        filename,
-        insurance_types(name), 
-        insurance_companies(name)
-      `)
-      .limit(3);
+    const { data: docs } = await supabase.rpc('search_documents', {
+      query_embedding: queryEmbedding,
+      match_threshold: 0.6,
+      match_count: 5
+    });
 
     let documentContext = '';
     if (docs && docs.length > 0) {
-      documentContext = docs.map(doc => 
-        `Document: ${doc.title}\nBestand: ${doc.filename}\nType: ${doc.insurance_types?.name || 'Onbekend'}\nMaatschappij: ${doc.insurance_companies?.name || 'Onbekend'}\nSamenvatting: ${doc.summary || 'Geen samenvatting beschikbaar'}`
+      documentContext = docs.map((doc, index) => 
+        `Document ${index + 1}: ${doc.title}
+Bestand: ${doc.filename}
+Verzekeringstype: ${doc.insurance_type || 'Onbekend'}
+Maatschappij: ${doc.insurance_company || 'Onbekend'}
+Samenvatting: ${doc.summary || 'Geen samenvatting beschikbaar'}
+Relevantie: ${(doc.similarity * 100).toFixed(1)}%`
       ).join('\n\n');
     }
 
@@ -103,30 +103,89 @@ serve(async (req) => {
       });
     }
 
-    const systemPrompt = `Je bent Coen A.I+, een gespecialiseerde verzekering matching assistent. Je helpt verzekeringsadviseurs bij het vinden van de beste verzekeringen voor hun klanten.
+    // Determine conversation stage based on history
+    const isFirstMessage = conversationHistory.length === 0;
+    const hasAskedForBusinessInfo = conversationHistory.some(msg => 
+      msg.role === 'assistant' && msg.content.toLowerCase().includes('bedrijf')
+    );
+    const hasCollectedData = Boolean(clientProfile || intakeData);
 
-Je expertise:
-- Autoverzekeringen (WA, Beperkt Casco, Volledig Casco, elektrische voertuigen)
-- Woonverzekeringen (opstal, inboedel, glasverzekering)
-- Zorgverzekeringen (basis, aanvullend, tandarts)
-- Zakelijke verzekeringen (aansprakelijkheid, rechtsbijstand, cyber)
-- Reisverzekeringen en andere specialistische polissen
+    const systemPrompt = `Je bent Coen, een persoonlijke verzekering matching assistent. Je volgt een gestructureerde aanpak om de beste verzekeringsopties te vinden.
 
-Voor elke klant situatie geef je:
-1. Een heldere analyse van de klant behoeften
-2. Top 3 meest geschikte verzekeraars met specifieke producten
-3. Uitleg waarom deze matches het beste passen
-4. Aandachtspunten en vergelijkingscriteria
-5. Praktische volgende stappen
+## WORKFLOW:
 
+### 1. VERWELKOMING (alleen bij eerste bericht)
+${isFirstMessage ? `Start altijd met: "Hallo! Ik ben Coen, je persoonlijke verzekering matching assistent. Beschrijf de situatie van je klant en ik help je de beste verzekeringopties te vinden. Wat kan ik voor je doen?"` : ''}
+
+### 2. BEDRIJFSSITUATIE ACHTERHALEN
+${!hasAskedForBusinessInfo ? `Stel vragen zoals: "Kun je me wat meer vertellen over jouw bedrijf? Wat voor type bedrijf heb je en hoeveel medewerkers heb je in dienst?"` : ''}
+
+### 3. SPECIFIEKE GEGEVENS VERZAMELEN
+Vraag naar:
+- Type bedrijf en activiteiten
+- Aantal medewerkers en omzet
+- Specifieke risico's (grote klanten, risicovolle locaties, etc.)
+- Huidige verzekeringen
+- Budget en voorkeuren
+
+### 4. ANALYSEREN EN MATCHEN
+Gebruik de verzamelde gegevens en match met beschikbare documenten. 
+BELANGRIJK: Verwijs ALTIJD naar specifieke documenten en secties.
+Format: "Document [nummer], Sectie [x]" of "Document [titel]"
+
+### 5. TABEL GENEREREN (wanneer gevraagd naar 1 specifiek verzekeringstype)
+Genereer een "Samenvattend Advies" tabel volgens deze regels:
+
+**INVOER FORMAT:**
+\`\`\`json
+{
+  "requirements": { 
+     "dekking1": "required|nice_to_have|not_needed", 
+     "dekking2": "required|nice_to_have|not_needed"
+  },
+  "policies": [
+    {
+      "insurer": "Naam Verzekeraar",
+      "coverages": { "dekking1": "included|optional|excluded" },
+      "remarks": "opmerkingen"
+    }
+  ]
+}
+\`\`\`
+
+**VERGELIJKINGSMATRIX:**
+- requirement "required" + coverage "included" = ✅ "Gedekt"
+- requirement "required" + coverage "optional" = 🟡 "Module vereist" 
+- requirement "required" + coverage "excluded" = ❌ "Niet gedekt"
+- requirement "nice_to_have" + coverage "included" = ✅ "Mooi meegenomen"
+- requirement "nice_to_have" + coverage "optional" = 🟡 "Beschikbaar als module"
+- requirement "nice_to_have" + coverage "excluded" = ⚪ "Niet essentieel"
+- requirement "not_needed" = ⓘ "Niet vereist"
+
+**TABEL FORMAT:**
+| Verzekeraar | [Dekking1] | [Dekking2] | Opmerkingen |
+|-------------|------------|------------|-------------|
+| Naam        | ✅ Status  | 🟡 Status  | Remarks     |
+
+**LEGENDA:** 
+"Legenda: ✅ Gedekt · 🟡 Module vereist · ❌ Niet gedekt · ⚪ Niet essentieel · ⓘ Niet vereist"
+
+### 6. AFSLUITING
+Sluit af met documentverwijzingen en verdere hulp aanbieden.
+
+## CLIENT CONTEXT:
 ${clientContext}
 
-${documentContext ? `BESCHIKBARE DOCUMENTEN:
-${documentContext}
+## BESCHIKBARE DOCUMENTEN:
+${documentContext || 'Geen documenten beschikbaar'}
 
-Wanneer relevante documenten beschikbaar zijn, verwijs er dan naar in je antwoord en citeer specifieke informatie. Gebruik de documenttitels en maatschappijen bij het refereren naar informatie. Geef altijd aan wanneer informatie uit specifieke documenten komt.` : ''}
-
-Spreek professioneel maar toegankelijk Nederlands. Focus op concrete, bruikbare adviezen.${clientProfile || intakeData ? ' Je hebt toegang tot client informatie - gebruik dit om gepersonaliseerd advies te geven.' : ''}`;
+## INSTRUCTIES:
+- Spreek professioneel Nederlands
+- Verwijs ALTIJD naar specifieke documenten bij advies
+- Gebruik documentnummers en titels consistent  
+- Bij tabellen: volg exact de beschreven format
+- Focus op concrete, bruikbare adviezen
+- Stel gerichte vervolgvragen om naar de volgende stap te gaan`;
 
     const messages = [
       { role: 'system', content: systemPrompt },

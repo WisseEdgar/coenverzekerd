@@ -114,8 +114,8 @@ const Chat = () => {
       });
       if (error) throw error;
       if (data && data.length === 0) {
-        // Add welcome message if conversation is empty
-        await addWelcomeMessage(conversation.id);
+        // Empty conversation - no welcome message needed, AI will handle first interaction
+        setMessages([]);
       } else {
         setMessages((data || []) as Message[]);
       }
@@ -289,15 +289,11 @@ const Chat = () => {
         }
       }
 
-      // Prepare conversation history for API (exclude welcome messages)
-      const conversationHistory = updatedMessages
-        .filter(
-          (msg) => !(msg.role === "assistant" && msg.content.includes("Hallo! Ik ben Coen A.I+"))
-        )
-        .map((msg) => ({
-          role: msg.role,
-          content: msg.content,
-        }));
+      // Prepare conversation history for API
+      const conversationHistory = updatedMessages.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      }));
 
 
       // Call Coen AI met client context
@@ -477,7 +473,7 @@ const Chat = () => {
                    </div>)}
                 {isLoading && <div className="flex gap-3 justify-start">
                     <Avatar className="h-8 w-8 mt-1">
-                      <AvatarFallback className="bg-simon-green text-white text-xs">SA</AvatarFallback>
+                      <AvatarFallback className="bg-simon-green text-white text-xs">CA</AvatarFallback>
                     </Avatar>
                     <Card className="p-4 max-w-2xl bg-muted">
                       <p className="text-sm text-muted-foreground">Coen denkt na...</p>
