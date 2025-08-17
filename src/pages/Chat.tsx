@@ -113,7 +113,12 @@ const Chat = () => {
         ascending: true
       });
       if (error) throw error;
-      setMessages((data || []) as Message[]);
+      if (data && data.length === 0) {
+        // Add welcome message if conversation is empty
+        await addWelcomeMessage(conversation.id);
+      } else {
+        setMessages((data || []) as Message[]);
+      }
     } catch (error) {
       console.error('Error loading conversation:', error);
       toast({
