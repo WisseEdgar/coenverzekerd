@@ -106,8 +106,8 @@ serve(async (req) => {
     if (action === 'migrate') {
       console.log(`Starting migration of ${batch_size} documents...`);
       
-      // Get legacy documents to migrate (get more than batch_size to account for processed docs)
-      let query = supabase
+      // Get unprocessed documents directly using SQL to avoid the filtering issue
+      const { data: legacyDocs, error: queryError } = await supabase
         .from('documents')
         .select(`
           id, title, filename, file_path, insurance_type_id, insurance_company_id,
@@ -115,50 +115,44 @@ serve(async (req) => {
           insurance_types!left(id, name),
           insurance_companies!left(id, name)
         `)
+        .not('file_path', 'in', `(
+          SELECT file_path FROM documents_v2 WHERE file_path IS NOT NULL
+        )`)
         .order('created_at', { ascending: true })
-        .limit(batch_size * 10); // Get more docs to account for already processed ones
+        .limit(batch_size);
 
-      // Get all legacy documents first, then filter in memory to avoid URL length issues
-      const { data: allLegacyDocs, error: allQueryError } = await query;
-      
-      if (allQueryError) {
-        throw new Error(`Error querying legacy documents: ${allQueryError.message}`);
+      if (queryError) {
+        console.error(`Query error details:`, queryError);
+        throw new Error(`Error querying legacy documents: ${queryError.message}`);
       }
 
-      let legacyDocs = allLegacyDocs || [];
-      console.log(`Retrieved ${legacyDocs.length} legacy documents from database`);
-
-      if (skip_processed && legacyDocs.length > 0) {
-        // Get processed file paths and filter in memory
-        const { data: processedIds } = await supabase
-          .from('documents_v2')
-          .select('file_path');
-        
-        const processedPaths = new Set(processedIds?.map(d => d.file_path) || []);
-        console.log(`Found ${processedPaths.size} already processed documents`);
-        
-        const originalCount = legacyDocs.length;
-        legacyDocs = legacyDocs.filter(doc => !processedPaths.has(doc.file_path));
-        console.log(`Filtered from ${originalCount} to ${legacyDocs.length} unprocessed documents`);
-        
-        // Take only the batch size needed
-        legacyDocs = legacyDocs.slice(0, batch_size);
-        console.log(`Taking batch of ${legacyDocs.length} documents to process`);
-      }
+      console.log(`Found ${legacyDocs?.length || 0} unprocessed documents to migrate`);
 
 
       if (!legacyDocs || legacyDocs.length === 0) {
+        // Double-check by getting total counts for debugging
+        const { count: totalLegacy } = await supabase
+          .from('documents')
+          .select('*', { count: 'exact', head: true });
+        
+        const { count: totalMigrated } = await supabase
+          .from('documents_v2')
+          .select('*', { count: 'exact', head: true });
+
+        console.log(`Debug: Total legacy: ${totalLegacy}, Total migrated: ${totalMigrated}`);
+        
         return new Response(JSON.stringify({
           success: true,
-          message: 'No documents to migrate',
+          message: 'No unprocessed documents found to migrate',
           processed: 0,
-          errors: []
+          errors: [],
+          debug: { totalLegacy, totalMigrated, remaining: (totalLegacy || 0) - (totalMigrated || 0) }
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      console.log(`Found ${legacyDocs.length} documents to migrate`);
+      console.log(`Processing ${legacyDocs.length} documents...`);
 
       const results = [];
       const errors = [];
