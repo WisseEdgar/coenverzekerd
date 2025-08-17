@@ -186,11 +186,73 @@ serve(async (req) => {
       throw new Error(`Search failed: ${searchError.message}`);
     }
 
-    console.log(`Found ${searchResults?.length || 0} search results`);
+    console.log(`Found ${searchResults?.length || 0} search results from chunks`);
 
+    // Step 2b: If no results from chunks, search the legacy documents table
+    let finalResults = searchResults;
     if (!searchResults || searchResults.length === 0) {
+      console.log('No results from chunks, searching legacy documents...');
+      
+      // Build a more sophisticated legacy search with filters
+      let legacyQuery = supabase
+        .from('documents')
+        .select(`
+          id, title, filename, summary, similarity,
+          insurance_types!inner(name),
+          insurance_companies!inner(name)
+        `, { count: 'exact' })
+        .not('embedding', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(8);
+
+      // Apply insurer filter if provided
+      if (searchFilters.insurer_name) {
+        legacyQuery = legacyQuery.ilike('insurance_companies.name', `%${searchFilters.insurer_name}%`);
+      }
+
+      // Apply line of business filter if provided (map to insurance type)
+      if (searchFilters.lob) {
+        legacyQuery = legacyQuery.ilike('insurance_types.name', `%${searchFilters.lob}%`);
+      }
+
+      const { data: legacyDocs, error: legacyError } = await legacyQuery;
+
+      if (legacyError) {
+        console.error('Legacy documents query error:', legacyError);
+      } else if (legacyDocs && legacyDocs.length > 0) {
+        console.log(`Found ${legacyDocs.length} legacy documents, now computing similarity...`);
+        
+        // Now compute similarity using the search_documents function for these filtered docs
+        const { data: legacyResults, error: legacySearchError } = await supabase
+          .rpc('search_documents', {
+            query_embedding: queryEmbedding,
+            match_threshold: 0.3,
+            match_count: 8
+          });
+
+        if (!legacySearchError && legacyResults && legacyResults.length > 0) {
+          console.log(`Found ${legacyResults.length} results from legacy documents`);
+          
+          // Transform legacy results to match the expected format
+          finalResults = legacyResults.map((doc: any, index: number) => ({
+            id: `legacy-${doc.id}`,
+            document_id: doc.id,
+            page: 1, // Legacy docs don't have page info
+            text: doc.summary || `Document: ${doc.title}`,
+            metadata: {},
+            similarity: doc.similarity,
+            document_title: doc.title,
+            product_name: doc.insurance_type || 'Algemeen',
+            insurer_name: doc.insurance_company || 'Onbekend',
+            version_label: doc.filename.split('.')[0]
+          }));
+        }
+      }
+    }
+
+    if (!finalResults || finalResults.length === 0) {
       return new Response(JSON.stringify({
-        answer: "Ik kon geen relevante informatie vinden in de huidige documentendatabase. Probeer:\n\n• Meer specifieke zoektermen gebruiken\n• Filters aanpassen (verzekeringssoort, verzekeraar)\n• Controleren of de benodigde documenten zijn geüpload\n\nVraag eventueel om hulp bij het uploaden van relevante polisvoorwaarden.",
+        answer: "Ik kon geen relevante informatie vinden in de documentendatabase. Probeer:\n\n• Meer specifieke zoektermen gebruiken\n• Filters aanpassen (verzekeringssoort, verzekeraar)\n• Controleren of de benodigde documenten zijn geüpload\n\nVraag eventueel om hulp bij het uploaden van relevante polisvoorwaarden.",
         passages: [],
         hasResults: false
       }), {
@@ -199,7 +261,7 @@ serve(async (req) => {
     }
 
     // Step 3: Prepare context for the LLM
-    const context = searchResults
+    const context = finalResults
       .filter((result: SearchResult) => result.similarity > 0.3) // Filter low-similarity results
       .map((result: SearchResult, index: number) => {
         return `[#${index + 1}] ${result.insurer_name} - ${result.product_name} (${result.document_title}${result.version_label ? ` ${result.version_label}` : ''}) - p.${result.page}
@@ -208,7 +270,7 @@ Content: ${result.text.substring(0, 1000)}${result.text.length > 1000 ? '...' : 
       })
       .join('\n\n');
 
-    console.log(`Generated context with ${searchResults.length} passages`);
+    console.log(`Generated context with ${finalResults.length} passages`);
 
     // Step 4: Generate answer using LLM
     console.log('Generating answer...');
@@ -226,7 +288,7 @@ Content: ${result.text.substring(0, 1000)}${result.text.length > 1000 ? '...' : 
     }
 
     // Format passages for frontend
-    const passages = searchResults.map((result: SearchResult) => ({
+    const passages = finalResults.map((result: SearchResult) => ({
       id: result.id,
       document_id: result.document_id,
       page: result.page,
