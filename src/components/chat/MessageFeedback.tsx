@@ -49,9 +49,9 @@ const MessageFeedback = ({ messageId, className = "" }: MessageFeedbackProps) =>
         .from('message_feedback')
         .select('*')
         .eq('message_id', messageId)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         throw error;
       }
 
