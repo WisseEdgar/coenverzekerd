@@ -299,8 +299,8 @@ const Chat = () => {
       // Call Coen AI met client context
       const { data: aiData, error: aiError } = await supabase.functions.invoke('coen-chat', {
         body: {
-          message: userMessage,
-          conversationHistory: conversationHistory,
+          messages: conversationHistory,
+          userMessage: userMessage,
           clientProfile: selectedClient,
           intakeData: intakeData,
         },
