@@ -138,12 +138,11 @@ async function extractTextAdvancedFallback(uint8Array: Uint8Array): Promise<stri
   // Method 1: Extract from PDF text objects with improved patterns
   const textObjects: string[] = [];
   
-  // Look for different text encoding patterns
+  // Look for different text encoding patterns - more selective
   const patterns = [
-    /BT\s*(.*?)\s*ET/gs,                    // Basic text objects
-    /\((.*?)\)\s*Tj/g,                      // Simple text showing
-    /\[(.*?)\]\s*TJ/g,                      // Text array showing
-    /\/F\d+\s+\d+\s+Tf\s*(.*?)(?=BT|ET|\n)/g, // Font-based text
+    /BT\s+(.*?)\s+ET/gs,                    // Basic text objects (more strict)
+    /\(([^)]{4,})\)\s*Tj/g,                 // Simple text showing (min 4 chars)
+    /\[([^\]]{10,})\]\s*TJ/g,               // Text array showing (min 10 chars)
   ];
   
   patterns.forEach(pattern => {
@@ -158,7 +157,10 @@ async function extractTextAdvancedFallback(uint8Array: Uint8Array): Promise<stri
         .replace(/\s+/g, ' ')
         .trim();
       
-      if (textContent.length > 3 && /[a-zA-Z]/.test(textContent)) {
+      // More strict filtering - must contain actual words
+      if (textContent.length > 10 && 
+          /[a-zA-Z]{3,}/.test(textContent) && 
+          textContent.split(/\s+/).filter(w => w.length > 2).length > 2) {
         textObjects.push(textContent);
       }
     }
@@ -166,20 +168,28 @@ async function extractTextAdvancedFallback(uint8Array: Uint8Array): Promise<stri
   
   let combinedText = textObjects.join(' ').trim();
   
-  // Method 2: If still insufficient, try to extract readable characters
-  if (combinedText.length < 100) {
-    console.log('Attempting character-level extraction');
+  // Method 2: Only attempt if we found some potential text
+  if (combinedText.length < 100 && combinedText.length > 0) {
+    console.log('Attempting selective character extraction');
     const readableChars = text
       .replace(/[^\x20-\x7E\u00A0-\u017F\u0100-\u024F]/g, ' ') // Keep ASCII + Latin extensions
       .replace(/\s+/g, ' ')
       .split(' ')
-      .filter(word => word.length > 2 && /[a-zA-Z]/.test(word))
+      .filter(word => word.length > 3 && /^[a-zA-Z]+$/.test(word)) // Only pure alphabetic words
       .join(' ')
       .trim();
     
-    if (readableChars.length > combinedText.length) {
+    if (readableChars.length > combinedText.length && readableChars.length > 100) {
       combinedText = readableChars;
     }
+  }
+  
+  // Fail gracefully if we only have binary/metadata
+  if (combinedText.length < 50 || 
+      combinedText.includes('%PDF') ||
+      combinedText.includes('endobj') ||
+      combinedText.includes('xref')) {
+    throw new Error('PDF contains only binary data or metadata - no readable text found');
   }
   
   return combinedText;
