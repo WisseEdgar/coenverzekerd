@@ -58,11 +58,26 @@ export function FailedDocumentProcessor() {
     }
   };
 
-  const handleDocumentSelection = (documentId: string, checked: boolean) => {
-    if (checked) {
-      setSelectedDocuments(prev => [...prev, documentId]);
+  const handleDocumentSelection = (documentId: string, checked: boolean | 'indeterminate') => {
+    console.log('handleDocumentSelection called:', { documentId, checked, type: typeof checked });
+    
+    // Only treat explicit true as checked, everything else as unchecked
+    const isChecked = checked === true;
+    
+    if (isChecked) {
+      setSelectedDocuments(prev => {
+        if (!prev.includes(documentId)) {
+          console.log('Adding document to selection:', documentId);
+          return [...prev, documentId];
+        }
+        return prev;
+      });
     } else {
-      setSelectedDocuments(prev => prev.filter(id => id !== documentId));
+      setSelectedDocuments(prev => {
+        const newSelection = prev.filter(id => id !== documentId);
+        console.log('Removing document from selection:', documentId, 'New selection:', newSelection);
+        return newSelection;
+      });
     }
   };
 
@@ -191,7 +206,7 @@ export function FailedDocumentProcessor() {
                 <div key={doc.document_id} className="flex items-center space-x-3 p-3 border rounded-lg">
                   <Checkbox
                     checked={selectedDocuments.includes(doc.document_id)}
-                    onCheckedChange={(checked) => handleDocumentSelection(doc.document_id, !!checked)}
+                    onCheckedChange={(checked) => handleDocumentSelection(doc.document_id, checked)}
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
