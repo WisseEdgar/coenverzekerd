@@ -1,270 +1,251 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.52.1';
-
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface ChunkData {
-  text: string;
+const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+interface PageText {
   page: number;
-  tokenCount: number;
-  metadata: Record<string, any>;
+  text: string;
+}
+
+function chunkText(page: number, text: string, maxSize = 4000, overlap = 400): Array<{page: number, text: string, tokenCount: number}> {
+  const chunks = [];
+  // Simple token estimation: ~4 chars per token
+  const estimatedTokens = Math.ceil(text.length / 4);
+  
+  if (estimatedTokens <= maxSize) {
+    return [{
+      page,
+      text,
+      tokenCount: estimatedTokens
+    }];
+  }
+  
+  const chunkSize = maxSize * 4; // Convert back to characters
+  const overlapSize = overlap * 4;
+  
+  for (let i = 0; i < text.length; i += (chunkSize - overlapSize)) {
+    const chunkText = text.slice(i, i + chunkSize);
+    if (chunkText.trim().length > 0) {
+      chunks.push({
+        page,
+        text: chunkText,
+        tokenCount: Math.ceil(chunkText.length / 4)
+      });
+    }
+  }
+  
+  return chunks;
+}
+
+async function embedTexts(texts: string[]): Promise<number[][]> {
+  if (!OPENAI_API_KEY) {
+    throw new Error('OpenAI API key not configured');
+  }
+
+  const response = await fetch('https://api.openai.com/v1/embeddings', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'text-embedding-3-small',
+      input: texts,
+      encoding_format: 'float'
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error('OpenAI API error:', error);
+    throw new Error(`OpenAI embedding failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.data.map((item: any) => item.embedding);
+}
+
+// Simple PDF text extraction fallback (placeholder)
+function extractTextFromPDF(buffer: ArrayBuffer): PageText[] {
+  // This is a placeholder - in production you'd use a proper PDF parser
+  const text = new TextDecoder().decode(buffer);
+  
+  // Try to extract readable text and split into reasonable pages
+  const cleanText = text.replace(/[^\x20-\x7E\n\r]/g, ' ').replace(/\s+/g, ' ').trim();
+  
+  if (cleanText.length < 100) {
+    throw new Error('Could not extract readable text from PDF');
+  }
+  
+  // Split into chunks that represent "pages" (rough estimation)
+  const wordsPerPage = 500;
+  const words = cleanText.split(' ');
+  const pages: PageText[] = [];
+  
+  for (let i = 0; i < words.length; i += wordsPerPage) {
+    const pageWords = words.slice(i, i + wordsPerPage);
+    const pageText = pageWords.join(' ');
+    
+    if (pageText.trim().length > 0) {
+      pages.push({
+        page: Math.floor(i / wordsPerPage) + 1,
+        text: pageText
+      });
+    }
+  }
+  
+  return pages.length > 0 ? pages : [{ page: 1, text: cleanText }];
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Verify admin access
-    const authHeader = req.headers.get('Authorization') || '';
-    const tempClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    
-    const { data: { user } } = await tempClient.auth.getUser();
-    if (!user) {
-      throw new Error('Unauthorized');
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error('Supabase configuration missing');
     }
 
-    const { data: isAdminData } = await tempClient.rpc('is_admin', { _user_id: user.id });
-    if (!isAdminData) {
-      throw new Error('Admin access required');
-    }
-
-    const { file_path, product_id } = await req.json();
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const body = await req.json();
     
-    console.log(`Starting PDF ingestion for file: ${file_path}, product: ${product_id}`);
+    console.log('Ingest PDF request:', { document_id: body.document_id, has_file_path: !!body.file_path, has_pages: !!body.pages });
 
-    // Download PDF from storage
-    const { data: fileData, error: downloadError } = await supabase.storage
-      .from('policy-pdfs')
-      .download(file_path);
+    let pages: PageText[] = [];
 
-    if (downloadError) {
-      throw new Error(`Failed to download PDF: ${downloadError.message}`);
-    }
-
-    console.log('PDF downloaded successfully, processing...');
-
-    // Convert PDF to text (simplified - in production you'd use a proper PDF parser)
-    const arrayBuffer = await fileData.arrayBuffer();
-    const decoder = new TextDecoder();
-    let extractedText = '';
-    
-    try {
-      // This is a simplified approach - in production use a proper PDF parser
-      // For now, we'll simulate PDF text extraction
-      extractedText = `Extracted content from ${file_path}\n\nThis is simulated PDF content for testing purposes.\n\nChapter 1: Introduction\nThis document contains insurance policy information.\n\nChapter 2: Coverage Details\nCoverage includes liability, property damage, and other specified risks.\n\nChapter 3: Exclusions\nCertain risks and conditions are excluded from coverage.\n\nChapter 4: Claims Process\nTo file a claim, contact the insurer within 24 hours.`;
+    if (body.pages && Array.isArray(body.pages)) {
+      // Client-side fallback: pages already extracted
+      pages = body.pages;
+      console.log(`Using client-provided pages: ${pages.length} pages`);
+    } else if (body.file_path) {
+      // Server-side PDF processing
+      console.log(`Downloading PDF from storage: ${body.file_path}`);
       
-      console.log(`Extracted ${extractedText.length} characters from PDF`);
-    } catch (error) {
-      console.error('PDF parsing error:', error);
-      throw new Error('Failed to parse PDF content');
+      const { data: file, error: downloadError } = await supabase.storage
+        .from('policy-pdfs')
+        .download(body.file_path);
+      
+      if (downloadError) {
+        console.error('Storage download error:', downloadError);
+        throw new Error(`Failed to download PDF: ${downloadError.message}`);
+      }
+
+      const arrayBuffer = await file.arrayBuffer();
+      pages = extractTextFromPDF(arrayBuffer);
+      console.log(`Extracted ${pages.length} pages from PDF`);
+    } else {
+      throw new Error('Either file_path or pages must be provided');
     }
 
-    // Update document with extracted text
-    const { data: document, error: docError } = await supabase
-      .from('documents_v2')
-      .update({ 
-        extracted_text: extractedText,
-        processing_status: 'processing',
-        pages: estimatePages(extractedText)
-      })
-      .eq('id', product_id)
-      .select()
-      .single();
-
-    if (docError) {
-      console.error('Document update error:', docError);
-      throw new Error(`Failed to update document: ${docError.message}`);
+    if (pages.length === 0) {
+      throw new Error('No text content found in document');
     }
 
-    // Create chunks from extracted text
-    const chunks = createChunks(extractedText, product_id);
-    console.log(`Created ${chunks.length} chunks`);
+    // Create chunks from all pages
+    const allChunks = pages.flatMap(page => chunkText(page.page, page.text));
+    console.log(`Created ${allChunks.length} chunks`);
+
+    if (allChunks.length === 0) {
+      throw new Error('No chunks created from document');
+    }
+
+    // Generate embeddings in batches to avoid token limits
+    const BATCH_SIZE = 32;
+    const allEmbeddings: number[][] = [];
+    
+    for (let i = 0; i < allChunks.length; i += BATCH_SIZE) {
+      const batch = allChunks.slice(i, i + BATCH_SIZE);
+      const batchTexts = batch.map(chunk => chunk.text);
+      
+      console.log(`Processing embedding batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(allChunks.length/BATCH_SIZE)}`);
+      
+      const embeddings = await embedTexts(batchTexts);
+      allEmbeddings.push(...embeddings);
+    }
+
+    console.log(`Generated ${allEmbeddings.length} embeddings`);
 
     // Insert chunks into database
+    const chunksToInsert = allChunks.map(chunk => ({
+      document_id: body.document_id,
+      page: chunk.page,
+      text: chunk.text,
+      token_count: chunk.tokenCount,
+      metadata: {}
+    }));
+
     const { data: insertedChunks, error: chunksError } = await supabase
       .from('chunks')
-      .insert(chunks.map(chunk => ({
-        document_id: product_id,
-        page: chunk.page,
-        token_count: chunk.tokenCount,
-        text: chunk.text,
-        metadata: chunk.metadata
-      })))
-      .select();
+      .insert(chunksToInsert)
+      .select('id');
 
     if (chunksError) {
-      console.error('Chunks insert error:', chunksError);
+      console.error('Error inserting chunks:', chunksError);
       throw new Error(`Failed to insert chunks: ${chunksError.message}`);
     }
 
-    console.log(`Inserted ${insertedChunks?.length} chunks, generating embeddings...`);
+    console.log(`Inserted ${insertedChunks.length} chunks`);
 
-    // Generate embeddings for each chunk
-    const embeddingPromises = insertedChunks!.map(async (chunk) => {
-      try {
-        const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${openAIApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'text-embedding-ada-002',
-            input: chunk.text,
-          }),
-        });
+    // Insert embeddings
+    const embeddingsToInsert = insertedChunks.map((chunk: any, index: number) => ({
+      chunk_id: chunk.id,
+      embedding: allEmbeddings[index]
+    }));
 
-        if (!embeddingResponse.ok) {
-          throw new Error(`OpenAI API error: ${embeddingResponse.status}`);
-        }
+    const { error: embeddingsError } = await supabase
+      .from('chunk_embeddings')
+      .insert(embeddingsToInsert);
 
-        const embeddingData = await embeddingResponse.json();
-        const embedding = embeddingData.data[0].embedding;
+    if (embeddingsError) {
+      console.error('Error inserting embeddings:', embeddingsError);
+      throw new Error(`Failed to insert embeddings: ${embeddingsError.message}`);
+    }
 
-        // Insert embedding
-        const { error: embeddingError } = await supabase
-          .from('chunk_embeddings')
-          .insert({
-            chunk_id: chunk.id,
-            embedding: embedding
-          });
+    console.log(`Inserted ${embeddingsToInsert.length} embeddings`);
 
-        if (embeddingError) {
-          console.error(`Failed to insert embedding for chunk ${chunk.id}:`, embeddingError);
-          return false;
-        }
-
-        return true;
-      } catch (error) {
-        console.error(`Error processing chunk ${chunk.id}:`, error);
-        return false;
-      }
-    });
-
-    // Wait for all embeddings to complete
-    const embeddingResults = await Promise.all(embeddingPromises);
-    const successCount = embeddingResults.filter(Boolean).length;
-
-    console.log(`Generated ${successCount}/${insertedChunks!.length} embeddings successfully`);
-
-    // Update document status
-    await supabase
+    // Update document processing status
+    const { error: updateError } = await supabase
       .from('documents_v2')
       .update({ 
-        processing_status: successCount === insertedChunks!.length ? 'completed' : 'partial'
+        processing_status: 'completed',
+        pages: pages.length
       })
-      .eq('id', product_id);
+      .eq('id', body.document_id);
 
-    // Log the completion
-    await supabase.rpc('log_admin_action', {
-      _action: `PDF ingestion completed: ${successCount}/${insertedChunks!.length} chunks processed`,
-      _table_name: 'documents_v2',
-      _record_id: product_id
-    });
+    if (updateError) {
+      console.warn('Warning: Could not update document status:', updateError);
+    }
 
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       success: true,
-      document_id: product_id,
-      chunks_created: insertedChunks!.length,
-      embeddings_generated: successCount,
-      extracted_text_length: extractedText.length
+      document_id: body.document_id,
+      pages: pages.length,
+      chunks: insertedChunks.length,
+      embeddings: embeddingsToInsert.length
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('Error in ingest-pdf function:', error);
-    return new Response(JSON.stringify({ 
+    
+    return new Response(JSON.stringify({
       error: error.message,
-      details: error.name || 'PDF ingestion failed'
+      success: false
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
-
-function estimatePages(text: string): number {
-  // Rough estimate: 2000 characters per page
-  return Math.max(1, Math.ceil(text.length / 2000));
-}
-
-function createChunks(text: string, documentId: string): ChunkData[] {
-  const chunks: ChunkData[] = [];
-  const targetChunkSize = 800; // tokens
-  const overlapSize = 100;
-  
-  // Split text into sentences
-  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
-  
-  let currentChunk = '';
-  let currentPage = 1;
-  let sentenceIndex = 0;
-  let chunkIndex = 0;
-  
-  for (const sentence of sentences) {
-    const trimmedSentence = sentence.trim();
-    if (!trimmedSentence) continue;
-    
-    const testChunk = currentChunk + (currentChunk ? '. ' : '') + trimmedSentence;
-    const estimatedTokens = Math.ceil(testChunk.length / 4); // Rough token estimate
-    
-    if (estimatedTokens > targetChunkSize && currentChunk) {
-      // Save current chunk
-      chunks.push({
-        text: currentChunk + '.',
-        page: currentPage,
-        tokenCount: Math.ceil(currentChunk.length / 4),
-        metadata: {
-          chunk_index: chunkIndex++,
-          sentence_start: Math.max(0, sentenceIndex - overlapSize / 50),
-          sentence_end: sentenceIndex
-        }
-      });
-      
-      // Start new chunk with overlap
-      const words = currentChunk.split(' ');
-      const overlapWords = words.slice(-Math.min(overlapSize / 4, words.length / 2));
-      currentChunk = overlapWords.join(' ') + (overlapWords.length > 0 ? '. ' : '') + trimmedSentence;
-    } else {
-      currentChunk = testChunk;
-    }
-    
-    sentenceIndex++;
-    
-    // Estimate page breaks (very rough)
-    if (currentChunk.length > currentPage * 2000) {
-      currentPage++;
-    }
-  }
-  
-  // Add final chunk
-  if (currentChunk.trim()) {
-    chunks.push({
-      text: currentChunk + '.',
-      page: currentPage,
-      tokenCount: Math.ceil(currentChunk.length / 4),
-      metadata: {
-        chunk_index: chunkIndex,
-        sentence_start: Math.max(0, sentenceIndex - 10),
-        sentence_end: sentenceIndex
-      }
-    });
-  }
-  
-  return chunks;
-}
