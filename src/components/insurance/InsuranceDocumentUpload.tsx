@@ -204,7 +204,7 @@ export function InsuranceDocumentUpload() {
 
       setState(prev => ({ ...prev, uploadProgress: 75, processing: true }));
 
-      // Trigger PDF processing
+      // Trigger PDF processing with improved error handling
       const { data: processResult, error: processError } = await supabase.functions.invoke('ingest-pdf', {
         body: {
           file_path: filePath,
@@ -212,13 +212,36 @@ export function InsuranceDocumentUpload() {
         }
       });
 
+      // Handle Supabase function invocation errors
       if (processError) {
         console.error('Edge function error:', processError);
-        throw new Error(`Document processing failed: ${processError.message || 'Unknown edge function error'}`);
+        
+        // Try to extract error details from the response
+        let errorMessage = 'Document processing failed';
+        
+        if (processError.message) {
+          errorMessage = processError.message;
+        }
+        
+        // For HTTP errors, the actual error might be in the context
+        if (processError.context?.body) {
+          try {
+            const errorBody = JSON.parse(processError.context.body);
+            if (errorBody.error) {
+              errorMessage = errorBody.error;
+            }
+          } catch (e) {
+            // Ignore JSON parse errors
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
 
+      // Handle processing result errors
       if (!processResult?.success) {
-        throw new Error(`PDF processing failed: ${processResult?.error || 'Unknown processing error'}`);
+        const errorMsg = processResult?.error || 'Unknown processing error';
+        throw new Error(errorMsg);
       }
 
       setState(prev => ({ 

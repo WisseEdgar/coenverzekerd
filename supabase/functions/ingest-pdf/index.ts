@@ -74,7 +74,7 @@ async function embedTexts(texts: string[]): Promise<number[][]> {
   return data.data.map((item: any) => item.embedding);
 }
 
-// Enhanced PDF text extraction with robust parsing
+// Simplified Deno-compatible PDF text extraction
 async function extractTextFromPDF(buffer: ArrayBuffer, filename: string): Promise<PageText[]> {
   console.log(`Starting PDF text extraction for: ${filename}`);
   
@@ -83,32 +83,10 @@ async function extractTextFromPDF(buffer: ArrayBuffer, filename: string): Promis
   let extractionMethod = '';
   
   try {
-    // Phase 1: Primary extraction using pdf-parse library
-    try {
-      const pdfParse = await import('https://esm.sh/pdf-parse@1.1.1');
-      const pdfData = await pdfParse.default(uint8Array);
-      extractedText = pdfData.text || '';
-      extractionMethod = 'pdf-parse';
-      console.log(`Primary extraction (${extractionMethod}): ${extractedText.length} characters`);
-    } catch (pdfParseError) {
-      console.warn(`Primary extraction failed: ${pdfParseError.message}, trying fallback`);
-      
-      // Phase 2: Secondary extraction using JSR pdf-parse
-      try {
-        const { default: jsrPdfParse } = await import('https://esm.sh/@lino/pdf-parse@1.0.0');
-        const pdfData = await jsrPdfParse(uint8Array);
-        extractedText = pdfData.text || '';
-        extractionMethod = 'jsr-pdf-parse';
-        console.log(`Secondary extraction (${extractionMethod}): ${extractedText.length} characters`);
-      } catch (jsrError) {
-        console.warn(`Secondary extraction failed: ${jsrError.message}, using advanced fallback`);
-        
-        // Phase 3: Advanced fallback extraction
-        extractedText = await extractTextAdvancedFallback(uint8Array);
-        extractionMethod = 'advanced-fallback';
-        console.log(`Fallback extraction (${extractionMethod}): ${extractedText.length} characters`);
-      }
-    }
+    // Use only the advanced fallback method that works in Deno
+    extractedText = await extractTextAdvancedFallback(uint8Array);
+    extractionMethod = 'regex-fallback';
+    console.log(`Extraction (${extractionMethod}): ${extractedText.length} characters`);
     
     // Phase 2: Content validation and quality checks
     const validationResult = await validateExtractedContent(extractedText, filename);
@@ -131,36 +109,37 @@ async function extractTextFromPDF(buffer: ArrayBuffer, filename: string): Promis
   }
 }
 
-// Advanced fallback text extraction with better heuristics
+// Enhanced Deno-compatible PDF text extraction
 async function extractTextAdvancedFallback(uint8Array: Uint8Array): Promise<string> {
   const text = new TextDecoder('utf-8', { fatal: false }).decode(uint8Array);
   
-  // Method 1: Extract from PDF text objects with improved patterns
+  // Method 1: Extract from PDF text objects with comprehensive patterns
   const textObjects: string[] = [];
   
-  // Look for different text encoding patterns - more selective
+  // Enhanced patterns for Dutch insurance documents
   const patterns = [
-    /BT\s+(.*?)\s+ET/gs,                    // Basic text objects (more strict)
-    /\(([^)]{4,})\)\s*Tj/g,                 // Simple text showing (min 4 chars)
-    /\[([^\]]{10,})\]\s*TJ/g,               // Text array showing (min 10 chars)
+    /BT\s+(.*?)\s+ET/gs,                    // Basic text objects
+    /\(([^)]{2,})\)\s*Tj/g,                 // Simple text showing (reduced min)
+    /\[([^\]]{5,})\]\s*TJ/g,               // Text array showing (reduced min)
+    />\s*\(([^)]{3,})\)/g,                 // Text after angle brackets
+    /\/F\d+\s+\d+\s+Tf\s+\((.*?)\)/g,     // Font definitions with text
   ];
   
   patterns.forEach(pattern => {
     let match;
     while ((match = pattern.exec(text)) !== null) {
       let textContent = match[1]
-        .replace(/Tj|TJ|Td|TD|Tm|Tf/g, ' ')
-        .replace(/\/F\d+/g, '')
-        .replace(/\[|\]/g, '')
-        .replace(/\(|\)/g, '')
-        .replace(/[0-9\.\-\s]{3,}/g, ' ')
+        .replace(/Tj|TJ|Td|TD|Tm|Tf|BT|ET/g, ' ')
+        .replace(/\/F\d+\s*\d*/g, '')
+        .replace(/\[|\]|\(|\)/g, '')
+        .replace(/\\\w+/g, '')              // Remove escape sequences
+        .replace(/[0-9\.\-\s]{4,}/g, ' ')   // Remove number sequences
         .replace(/\s+/g, ' ')
         .trim();
       
-      // More strict filtering - must contain actual words
-      if (textContent.length > 10 && 
-          /[a-zA-Z]{3,}/.test(textContent) && 
-          textContent.split(/\s+/).filter(w => w.length > 2).length > 2) {
+      // Less strict filtering for better text capture
+      if (textContent.length > 3 && 
+          /[a-zA-Z]{2,}/.test(textContent)) {
         textObjects.push(textContent);
       }
     }
@@ -168,28 +147,55 @@ async function extractTextAdvancedFallback(uint8Array: Uint8Array): Promise<stri
   
   let combinedText = textObjects.join(' ').trim();
   
-  // Method 2: Only attempt if we found some potential text
-  if (combinedText.length < 100 && combinedText.length > 0) {
-    console.log('Attempting selective character extraction');
-    const readableChars = text
-      .replace(/[^\x20-\x7E\u00A0-\u017F\u0100-\u024F]/g, ' ') // Keep ASCII + Latin extensions
-      .replace(/\s+/g, ' ')
-      .split(' ')
-      .filter(word => word.length > 3 && /^[a-zA-Z]+$/.test(word)) // Only pure alphabetic words
-      .join(' ')
-      .trim();
+  // Method 2: Enhanced character extraction with better filtering
+  if (combinedText.length < 200) {
+    console.log('Attempting enhanced character extraction');
     
-    if (readableChars.length > combinedText.length && readableChars.length > 100) {
-      combinedText = readableChars;
+    // Extract readable content with more permissive filtering
+    const lines = text.split(/[\r\n]+/)
+      .map(line => line.replace(/[^\x20-\x7E\u00A0-\u017F\u0100-\u024F\u2000-\u206F]/g, ' ')) // Keep more Unicode ranges
+      .map(line => line.replace(/\s+/g, ' ').trim())
+      .filter(line => {
+        // Keep lines with reasonable word content
+        const words = line.split(/\s+/).filter(w => w.length > 1 && /[a-zA-Z]/.test(w));
+        return words.length >= 2 && line.length > 10 && line.length < 200;
+      })
+      .filter(line => {
+        // Remove obvious PDF artifacts
+        return !line.includes('%PDF') && 
+               !line.includes('endobj') && 
+               !line.includes('xref') &&
+               !line.includes('stream') &&
+               !line.match(/^[0-9\s\.\-]{10,}$/);
+      });
+    
+    const readableText = lines.join(' ').trim();
+    
+    if (readableText.length > combinedText.length) {
+      combinedText = readableText;
     }
   }
   
-  // Fail gracefully if we only have binary/metadata
-  if (combinedText.length < 50 || 
-      combinedText.includes('%PDF') ||
-      combinedText.includes('endobj') ||
-      combinedText.includes('xref')) {
-    throw new Error('PDF contains only binary data or metadata - no readable text found');
+  // Method 3: Emergency extraction for stubborn PDFs
+  if (combinedText.length < 100) {
+    console.log('Attempting emergency text extraction');
+    
+    // Look for any readable words in the entire buffer
+    const emergencyText = text
+      .replace(/[^\x20-\x7E\u00A0-\u017F\u0100-\u024F]/g, ' ')
+      .split(/\s+/)
+      .filter(word => word.length > 2 && /^[a-zA-Z][a-zA-Z\-']*[a-zA-Z]?$/.test(word))
+      .filter((word, index, arr) => arr.indexOf(word) === index) // Remove duplicates
+      .join(' ');
+    
+    if (emergencyText.length > combinedText.length && emergencyText.length > 50) {
+      combinedText = emergencyText;
+    }
+  }
+  
+  // More lenient validation
+  if (combinedText.length < 20) {
+    throw new Error(`PDF text extraction insufficient: only ${combinedText.length} characters extracted. File may be image-based or encrypted.`);
   }
   
   return combinedText;
