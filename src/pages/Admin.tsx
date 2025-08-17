@@ -8,7 +8,8 @@ import { DocumentReassignmentManager } from '@/components/admin/DocumentReassign
 import { BatchProcessEmbeddings } from '@/components/admin/BatchProcessEmbeddings';
 import { AuditLogViewer } from '@/components/admin/AuditLogViewer';
 import { MessageFeedbackViewer } from '@/components/admin/MessageFeedbackViewer';
-import { Settings, FileText, Building, RotateCcw, Shield, MessageSquare, RefreshCw, Zap } from 'lucide-react';
+import { DocumentMigration } from '@/components/admin/DocumentMigration';
+import { Settings, FileText, Building, RotateCcw, Shield, MessageSquare, RefreshCw, Zap, Database } from 'lucide-react';
 
 export default function Admin() {
   return (
@@ -25,7 +26,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="types" className="w-full">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="types" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Verzekeringtypes
@@ -45,6 +46,10 @@ export default function Admin() {
             <TabsTrigger value="embeddings" className="flex items-center gap-2">
               <Zap className="h-4 w-4" />
               AI Processing
+            </TabsTrigger>
+            <TabsTrigger value="migration" className="flex items-center gap-2">
+              <Database className="h-4 w-4" />
+              Document Migratie
             </TabsTrigger>
             <TabsTrigger value="audit" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
@@ -74,6 +79,10 @@ export default function Admin() {
           
           <TabsContent value="embeddings" className="space-y-6">
             <BatchProcessEmbeddings />
+          </TabsContent>
+          
+          <TabsContent value="migration" className="space-y-6">
+            <DocumentMigration />
           </TabsContent>
           
           <TabsContent value="audit" className="space-y-6">
