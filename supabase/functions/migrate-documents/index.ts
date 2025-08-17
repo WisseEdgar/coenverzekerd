@@ -116,13 +116,16 @@ serve(async (req) => {
           insurance_companies!left(id, name)
         `)
         .not('file_path', 'in', `(
-          SELECT file_path FROM documents_v2 WHERE file_path IS NOT NULL
+          SELECT TRIM(file_path) FROM documents_v2 
+          WHERE file_path IS NOT NULL AND TRIM(file_path) != ''
         )`)
         .order('created_at', { ascending: true })
         .limit(batch_size);
 
       if (queryError) {
         console.error(`Query error details:`, queryError);
+        // Log the actual SQL query that failed
+        console.error(`Failed query was looking for unprocessed documents with batch_size: ${batch_size}`);
         throw new Error(`Error querying legacy documents: ${queryError.message}`);
       }
 
