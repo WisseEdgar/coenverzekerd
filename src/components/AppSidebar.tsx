@@ -15,10 +15,6 @@ const toolsItems = [{
   title: "AI Chat",
   url: "/dashboard/chat",
   icon: MessageSquare
-}, {
-  title: "Verzekeringschat",
-  url: "/dashboard/insurance-chat",
-  icon: Shield
 }];
 
 const adminToolsItems = [{

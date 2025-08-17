@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Send, Settings, MessageSquare, X, BarChart3, Save, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Send, Settings, MessageSquare, X, BarChart3, Save, ChevronDown, ChevronUp, FileText, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -8,8 +8,12 @@ import { SidebarProvider, SidebarTrigger, Sidebar, SidebarContent } from "@/comp
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Link, useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 import ClientSelector from "@/components/chat/ClientSelector";
 import IntakeQuestionnaire from "@/components/chat/IntakeQuestionnaire";
 import SaveClientDialog from "@/components/chat/SaveClientDialog";
@@ -17,11 +21,22 @@ import MessageFeedback from "@/components/chat/MessageFeedback";
 import { ProfileDropdown } from "@/components/layout/ProfileDropdown";
 import ReactMarkdown from 'react-markdown';
 import { getPreflightQuestionnaire } from "@/lib/preflightQuestionnaires";
+interface Citation {
+  document_id: string;
+  document_title: string;
+  insurer_name: string;
+  product_name: string;
+  page: number;
+  version_label?: string;
+  similarity: number;
+}
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   created_at: string;
+  citations?: Citation[];
 }
 interface ClientProfile {
   id: string;
@@ -40,6 +55,26 @@ interface Conversation {
   created_at: string;
   updated_at: string;
 }
+
+interface SearchFilters {
+  line_of_business?: string;
+  insurer?: string;
+}
+
+const INSURANCE_LINES = [
+  'Aansprakelijkheidsverzekering',
+  'Arbeidsongeschiktheidsverzekering', 
+  'Autoverzekering',
+  'Bedrijfsschadeverzekering',  
+  'CAR-verzekering',
+  'Cyberverzekering',
+  'Opstalverzekering',
+  'Inboedelverzekering',
+  'Reisverzekering',
+  'Transportverzekering',
+  'Zorgverzekering',
+  'Overige'
+];
 const Chat = () => {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -52,8 +87,23 @@ const Chat = () => {
   const [intakeData, setIntakeData] = useState<any>(null);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [clientPanelOpen, setClientPanelOpen] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
+  const [searchFilters, setSearchFilters] = useState<SearchFilters>({});
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Fetch insurers for filter dropdown
+  const { data: insurers } = useQuery({
+    queryKey: ['insurers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('insurers')
+        .select('*')
+        .order('name');
+      if (error) throw error;
+      return data;
+    }
+  });
 
   // Check auth and load conversations on mount
   useEffect(() => {
@@ -296,16 +346,47 @@ const Chat = () => {
       }));
 
 
-      // Call Coen AI met client context
-      const { data: aiData, error: aiError } = await supabase.functions.invoke('coen-chat', {
+      // Prepare user context from client context
+      let userContextString = '';
+      if (selectedClient) {
+        userContextString = `
+Klanttype: ${selectedClient.client_type === 'private' ? 'particulier' : 'bedrijf'}
+${selectedClient.company_name ? `Bedrijf: ${selectedClient.company_name}` : ''}
+${selectedClient.full_name ? `Naam: ${selectedClient.full_name}` : ''}
+${selectedClient.advisor_notes ? `Situatie: ${selectedClient.advisor_notes}` : ''}
+        `.trim();
+      } else if (intakeData) {
+        userContextString = `
+Klanttype: ${intakeData.client_type || 'particulier'}
+${intakeData.company_name ? `Bedrijf: ${intakeData.company_name}` : ''}
+${intakeData.full_name ? `Naam: ${intakeData.full_name}` : ''}
+${intakeData.situation_description ? `Situatie: ${intakeData.situation_description}` : ''}
+${intakeData.insurance_needs ? `Verzekeringsbehoefte: ${intakeData.insurance_needs}` : ''}
+        `.trim();
+      }
+
+      // Call RAG system for insurance advice
+      const { data: aiData, error: aiError } = await supabase.functions.invoke('chat-answer', {
         body: {
-          messages: conversationHistory,
-          userMessage: userMessage,
-          clientProfile: selectedClient,
-          intakeData: intakeData,
-        },
+          query: userMessage,
+          filters: {
+            lob: searchFilters.line_of_business || null,
+            insurer_name: searchFilters.insurer || null
+          },
+          userContext: userContextString || undefined
+        }
       });
       if (aiError) throw aiError;
+
+      // Convert passages to citations
+      const citations: Citation[] = aiData.passages?.slice(0, 5).map((passage: any, index: number) => ({
+        document_id: passage.document_id,
+        document_title: passage.document_title || 'Onbekend document',
+        page: passage.page || 1,
+        insurer_name: passage.insurer_name || 'Onbekende verzekeraar',
+        product_name: passage.product_name || 'Onbekend product',
+        similarity: passage.similarity || 0
+      })) || [];
 
       // Add AI response to database
       const {
@@ -314,12 +395,13 @@ const Chat = () => {
       } = await supabase.from('messages').insert({
         conversation_id: activeConversation.id,
         role: 'assistant',
-        content: aiData.response
+        content: aiData.answer || 'Geen antwoord gegenereerd.'
       }).select().single();
       if (aiMessageError) throw aiMessageError;
 
-      // Update local messages
-      setMessages(prev => [...prev, aiMessageData as Message]);
+      // Update local messages with citations
+      const messageWithCitations = { ...aiMessageData, citations } as Message;
+      setMessages(prev => [...prev, messageWithCitations]);
     } catch (error) {
       console.error('Chat error:', error);
       toast({
@@ -401,12 +483,78 @@ const Chat = () => {
               </Avatar>
               <div>
                 <h2 className="font-semibold">Coen A.I+</h2>
-                <p className="text-sm text-muted-foreground">{activeConversation?.title || "Verzekering Matching Assistent"}</p>
+                <p className="text-sm text-muted-foreground">{activeConversation?.title || "Verzekering RAG Assistent"}</p>
               </div>
             </div>
-            <ProfileDropdown />
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Filters
+              </Button>
+              <ProfileDropdown />
+            </div>
           </div>
         </div>
+
+        {/* Search Filters */}
+        {showFilters && (
+          <div className="border-b p-4 bg-muted/30">
+            <div className="flex flex-wrap gap-4">
+              <div className="min-w-48">
+                <Select 
+                  value={searchFilters.line_of_business || ''} 
+                  onValueChange={(value) => setSearchFilters(prev => ({ 
+                    ...prev, 
+                    line_of_business: value || undefined 
+                  }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Verzekeringssoort" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Alle soorten</SelectItem>
+                    {INSURANCE_LINES.map((line) => (
+                      <SelectItem key={line} value={line}>{line}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="min-w-48">
+                <Select 
+                  value={searchFilters.insurer || ''} 
+                  onValueChange={(value) => setSearchFilters(prev => ({ 
+                    ...prev, 
+                    insurer: value || undefined 
+                  }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Verzekeraar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Alle verzekeraars</SelectItem>
+                    {insurers?.map((insurer) => (
+                      <SelectItem key={insurer.id} value={insurer.name}>{insurer.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSearchFilters({})}
+              >
+                <X className="h-4 w-4 mr-1" />
+                Reset
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Client Selection and Intake */}
         {showIntake ? <div className="flex-1 flex items-center justify-center p-4 font-normal">
@@ -456,9 +604,31 @@ const Chat = () => {
                      <div className="flex flex-col max-w-2xl">
                         <Card className={`p-4 ${msg.role === 'user' ? 'bg-simon-green text-white' : 'bg-muted'}`}>
                           {msg.role === 'assistant' ? (
-                            <div className="text-sm font-medium prose prose-sm max-w-none prose-headings:font-semibold prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground">
-                              <ReactMarkdown>{msg.content}</ReactMarkdown>
-                            </div>
+                            <>
+                              <div className="text-sm font-medium prose prose-sm max-w-none prose-headings:font-semibold prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground">
+                                <ReactMarkdown>{msg.content}</ReactMarkdown>
+                              </div>
+                              
+                              {/* Citations */}
+                              {msg.citations && msg.citations.length > 0 && (
+                                <div className="mt-3 pt-3 border-t border-border/30">
+                                  <p className="text-xs font-medium mb-2 opacity-70">Bronnen:</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {msg.citations.map((citation, index) => (
+                                      <Badge 
+                                        key={index} 
+                                        variant="secondary" 
+                                        className="text-xs cursor-pointer hover:bg-secondary/80"
+                                        title={`${citation.insurer_name} - ${citation.product_name}\n${citation.document_title}\nPagina ${citation.page}\nRelevantie: ${(citation.similarity * 100).toFixed(1)}%`}
+                                      >
+                                        <FileText className="h-3 w-3 mr-1" />
+                                        {citation.insurer_name} p.{citation.page}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </>
                           ) : (
                             <p className="whitespace-pre-line text-sm font-medium">{msg.content}</p>
                           )}
@@ -476,7 +646,10 @@ const Chat = () => {
                       <AvatarFallback className="bg-simon-green text-white text-xs">CA</AvatarFallback>
                     </Avatar>
                     <Card className="p-4 max-w-2xl bg-muted">
-                      <p className="text-sm text-muted-foreground">Coen denkt na...</p>
+                      <div className="flex items-center space-x-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-simon-green"></div>
+                        <span className="text-sm text-muted-foreground">Zoeken in verzekeringsdocumenten...</span>
+                      </div>
                     </Card>
                   </div>}
               </div>
@@ -490,14 +663,33 @@ const Chat = () => {
         {!showIntake && <div className="p-4 border-t border-border bg-card">
             <div className="flex gap-2 max-w-4xl">
               <div className="flex-1 relative">
-                <Input value={message} onChange={e => setMessage(e.target.value)} placeholder="Beschrijf je klant situatie of stel een vraag over verzekeringen..." onKeyPress={e => e.key === 'Enter' && !e.shiftKey && handleSendMessage()} disabled={isLoading} className="pr-12" />
-                <Button size="sm" variant="ghost" onClick={handleSendMessage} disabled={isLoading || !message.trim()} className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-simon-green hover:text-white disabled:opacity-50">
+                <Textarea 
+                  value={message} 
+                  onChange={e => setMessage(e.target.value)} 
+                  placeholder="Beschrijf je klant situatie of stel een vraag over verzekeringen..." 
+                  onKeyPress={e => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }} 
+                  disabled={isLoading} 
+                  rows={1}
+                  className="min-h-[40px] max-h-32 resize-none pr-12" 
+                />
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  onClick={handleSendMessage} 
+                  disabled={isLoading || !message.trim()} 
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-simon-green hover:text-white disabled:opacity-50"
+                >
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2 max-w-4xl">
-              Coen kan fouten maken. Controleer belangrijke informatie altijd bij de verzekeraar.
+              Coen gebruikt actuele polisvoorwaarden om je vragen te beantwoorden. Controleer belangrijke informatie altijd bij de verzekeraar.
             </p>
           </div>}
       </div>
