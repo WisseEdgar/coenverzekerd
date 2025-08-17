@@ -4,7 +4,7 @@ import { Building2, FileText, RefreshCw, Zap, FileSearch2, MessageSquare, Databa
 import { AdminGuard } from '@/components/admin/AdminGuard';
 import { InsuranceTypesManager } from '@/components/admin/InsuranceTypesManager';
 import { InsuranceCompaniesManager } from '@/components/admin/InsuranceCompaniesManager';
-import { DocumentReprocessManager } from '@/components/admin/DocumentReprocessManager';
+import { FailedDocumentProcessor } from '@/components/admin/FailedDocumentProcessor';
 import { DocumentReassignmentManager } from '@/components/admin/DocumentReassignmentManager';
 import { BatchProcessEmbeddings } from '@/components/admin/BatchProcessEmbeddings';
 import { AuditLogViewer } from '@/components/admin/AuditLogViewer';
@@ -41,7 +41,7 @@ export default function Admin() {
             </TabsTrigger>
             <TabsTrigger value="reprocess" className="flex items-center gap-2">
               <RefreshCw className="h-4 w-4" />
-              Document Herverwerking
+              PDF Extractie Herstel
             </TabsTrigger>
             <TabsTrigger value="embeddings" className="flex items-center gap-2">
               <Zap className="h-4 w-4" />
@@ -74,7 +74,7 @@ export default function Admin() {
           </TabsContent>
           
           <TabsContent value="reprocess" className="space-y-6">
-            <DocumentReprocessManager />
+            <FailedDocumentProcessor />
           </TabsContent>
           
           <TabsContent value="embeddings" className="space-y-6">
