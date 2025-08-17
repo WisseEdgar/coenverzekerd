@@ -106,7 +106,7 @@ serve(async (req) => {
     if (action === 'migrate') {
       console.log(`Starting migration of ${batch_size} documents...`);
       
-      // Get legacy documents to migrate
+      // Get legacy documents to migrate (get more than batch_size to account for processed docs)
       let query = supabase
         .from('documents')
         .select(`
@@ -116,25 +116,33 @@ serve(async (req) => {
           insurance_companies!left(id, name)
         `)
         .order('created_at', { ascending: true })
-        .limit(batch_size);
+        .limit(batch_size * 10); // Get more docs to account for already processed ones
 
-      if (skip_processed) {
-        // Only migrate documents not already in documents_v2
+      // Get all legacy documents first, then filter in memory to avoid URL length issues
+      const { data: allLegacyDocs, error: allQueryError } = await query;
+      
+      if (allQueryError) {
+        throw new Error(`Error querying legacy documents: ${allQueryError.message}`);
+      }
+
+      let legacyDocs = allLegacyDocs || [];
+
+      if (skip_processed && legacyDocs.length > 0) {
+        // Get processed file paths and filter in memory
         const { data: processedIds } = await supabase
           .from('documents_v2')
           .select('file_path');
         
-        const processedPaths = processedIds?.map(d => d.file_path) || [];
-        if (processedPaths.length > 0) {
-          query = query.not('file_path', 'in', `(${processedPaths.map(p => `"${p}"`).join(',')})`);
-        }
+        const processedPaths = new Set(processedIds?.map(d => d.file_path) || []);
+        console.log(`Found ${processedPaths.size} already processed documents`);
+        
+        legacyDocs = legacyDocs.filter(doc => !processedPaths.has(doc.file_path));
+        console.log(`Filtered to ${legacyDocs.length} unprocessed documents`);
+        
+        // Take only the batch size needed
+        legacyDocs = legacyDocs.slice(0, batch_size);
       }
 
-      const { data: legacyDocs, error: queryError } = await query;
-
-      if (queryError) {
-        throw new Error(`Error querying legacy documents: ${queryError.message}`);
-      }
 
       if (!legacyDocs || legacyDocs.length === 0) {
         return new Response(JSON.stringify({
