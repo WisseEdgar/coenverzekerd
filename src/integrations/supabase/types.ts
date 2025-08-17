@@ -470,6 +470,7 @@ export type Database = {
           created_at: string
           file_path: string
           file_sha256: string | null
+          filename: string
           id: string
           pages: number | null
           processing_status: string | null
@@ -484,6 +485,7 @@ export type Database = {
           created_at?: string
           file_path: string
           file_sha256?: string | null
+          filename: string
           id?: string
           pages?: number | null
           processing_status?: string | null
@@ -498,6 +500,7 @@ export type Database = {
           created_at?: string
           file_path?: string
           file_sha256?: string | null
+          filename?: string
           id?: string
           pages?: number | null
           processing_status?: string | null

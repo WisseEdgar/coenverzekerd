@@ -10,6 +10,8 @@ import Documents from "./Documents";
 import Admin from "./Admin";
 import Clients from "./Clients";
 import Settings from "./Settings";
+import InsuranceDocuments from "./InsuranceDocuments";
+import InsuranceChatPage from "./InsuranceChat";
 import { ProfileDropdown } from "@/components/layout/ProfileDropdown";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +25,7 @@ interface RecentActivity {
 const Dashboard = () => {
   const location = useLocation();
   const isChatRoute = location.pathname === "/dashboard/chat";
+  const isInsuranceChatRoute = location.pathname === "/dashboard/insurance-chat";
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [clientStats, setClientStats] = useState({
     total: 0,
@@ -147,6 +150,11 @@ const Dashboard = () => {
   if (isChatRoute) {
     return <Chat />;
   }
+
+  // If it's the insurance chat route, render the full-screen insurance chat
+  if (isInsuranceChatRoute) {
+    return <InsuranceChatPage />;
+  }
   return <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
@@ -166,6 +174,8 @@ const Dashboard = () => {
             <Routes>
               <Route path="/admin" element={<Admin />} />
               <Route path="/documents" element={<Documents />} />
+              <Route path="/insurance-documents" element={<InsuranceDocuments />} />
+              <Route path="/insurance-chat" element={<InsuranceChatPage />} />
               <Route path="/clients" element={<Clients />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/" element={<div className="max-w-7xl mx-auto space-y-6">

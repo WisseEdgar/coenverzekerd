@@ -1,5 +1,5 @@
 import { NavLink, useLocation, Link } from "react-router-dom";
-import { Users, Search, FileText, Settings, BarChart3, Home, MessageSquare } from "lucide-react";
+import { Users, Search, FileText, Settings, BarChart3, Home, MessageSquare, Shield } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
 import { AdminOnly } from "@/components/admin/AdminOnly";
 const mainItems = [{
@@ -15,12 +15,20 @@ const toolsItems = [{
   title: "AI Chat",
   url: "/dashboard/chat",
   icon: MessageSquare
+}, {
+  title: "Verzekeringschat",
+  url: "/dashboard/insurance-chat",
+  icon: Shield
 }];
 
 const adminToolsItems = [{
   title: "Documenten",
   url: "/dashboard/documents",
   icon: FileText
+}, {
+  title: "Verzekeringsdocumenten",
+  url: "/dashboard/insurance-documents", 
+  icon: Shield
 }];
 const settingsItems = [{
   title: "Instellingen",

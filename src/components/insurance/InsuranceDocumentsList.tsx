@@ -87,7 +87,7 @@ export function InsuranceDocumentsList() {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data as Document[];
+      return data as unknown as Document[];
     }
   });
 
