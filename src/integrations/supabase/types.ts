@@ -53,6 +53,182 @@ export type Database = {
         }
         Relationships: []
       }
+      answer_citations: {
+        Row: {
+          answer_id: string
+          created_at: string
+          document_id: string
+          end_char: number | null
+          id: string
+          page: number | null
+          score: number | null
+          section_id: string | null
+          start_char: number | null
+        }
+        Insert: {
+          answer_id: string
+          created_at?: string
+          document_id: string
+          end_char?: number | null
+          id?: string
+          page?: number | null
+          score?: number | null
+          section_id?: string | null
+          start_char?: number | null
+        }
+        Update: {
+          answer_id?: string
+          created_at?: string
+          document_id?: string
+          end_char?: number | null
+          id?: string
+          page?: number | null
+          score?: number | null
+          section_id?: string | null
+          start_char?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "answer_citations_answer_id_fkey"
+            columns: ["answer_id"]
+            isOneToOne: false
+            referencedRelation: "answers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "answer_citations_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents_v2"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "answer_citations_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      answers: {
+        Row: {
+          answer_text: string
+          completion_tokens: number | null
+          created_at: string
+          id: string
+          latency_ms: number | null
+          model: string | null
+          prompt_tokens: number | null
+          query_id: string
+        }
+        Insert: {
+          answer_text: string
+          completion_tokens?: number | null
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          model?: string | null
+          prompt_tokens?: number | null
+          query_id: string
+        }
+        Update: {
+          answer_text?: string
+          completion_tokens?: number | null
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          model?: string | null
+          prompt_tokens?: number | null
+          query_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "answers_query_id_fkey"
+            columns: ["query_id"]
+            isOneToOne: false
+            referencedRelation: "queries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chunk_embeddings: {
+        Row: {
+          chunk_id: string
+          created_at: string
+          embedding: string | null
+          id: string
+        }
+        Insert: {
+          chunk_id: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+        }
+        Update: {
+          chunk_id?: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chunk_embeddings_chunk_id_fkey"
+            columns: ["chunk_id"]
+            isOneToOne: false
+            referencedRelation: "chunks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chunks: {
+        Row: {
+          created_at: string
+          document_id: string
+          id: string
+          metadata: Json | null
+          page: number | null
+          section_id: string | null
+          text: string
+          token_count: number | null
+        }
+        Insert: {
+          created_at?: string
+          document_id: string
+          id?: string
+          metadata?: Json | null
+          page?: number | null
+          section_id?: string | null
+          text: string
+          token_count?: number | null
+        }
+        Update: {
+          created_at?: string
+          document_id?: string
+          id?: string
+          metadata?: Json | null
+          page?: number | null
+          section_id?: string | null
+          text?: string
+          token_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chunks_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents_v2"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chunks_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_profiles: {
         Row: {
           address: string | null
@@ -289,6 +465,59 @@ export type Database = {
           },
         ]
       }
+      documents_v2: {
+        Row: {
+          created_at: string
+          file_path: string
+          file_sha256: string | null
+          id: string
+          pages: number | null
+          processing_status: string | null
+          product_id: string
+          source_type: string | null
+          title: string
+          updated_at: string
+          version_date: string | null
+          version_label: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_path: string
+          file_sha256?: string | null
+          id?: string
+          pages?: number | null
+          processing_status?: string | null
+          product_id: string
+          source_type?: string | null
+          title: string
+          updated_at?: string
+          version_date?: string | null
+          version_label?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_path?: string
+          file_sha256?: string | null
+          id?: string
+          pages?: number | null
+          processing_status?: string | null
+          product_id?: string
+          source_type?: string | null
+          title?: string
+          updated_at?: string
+          version_date?: string | null
+          version_label?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_v2_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       insurance_companies: {
         Row: {
           created_at: string
@@ -334,6 +563,33 @@ export type Database = {
           id?: string
           name?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      insurers: {
+        Row: {
+          created_at: string
+          id: string
+          kvk: string | null
+          name: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kvk?: string | null
+          name: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kvk?: string | null
+          name?: string
+          updated_at?: string
+          website?: string | null
         }
         Relationships: []
       }
@@ -407,6 +663,53 @@ export type Database = {
           },
         ]
       }
+      products: {
+        Row: {
+          created_at: string
+          id: string
+          insurer_id: string
+          jurisdiction: string | null
+          language: string | null
+          line_of_business: string
+          name: string
+          updated_at: string
+          version_date: string | null
+          version_label: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          insurer_id: string
+          jurisdiction?: string | null
+          language?: string | null
+          line_of_business: string
+          name: string
+          updated_at?: string
+          version_date?: string | null
+          version_label?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          insurer_id?: string
+          jurisdiction?: string | null
+          language?: string | null
+          line_of_business?: string
+          name?: string
+          updated_at?: string
+          version_date?: string | null
+          version_label?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_insurer_id_fkey"
+            columns: ["insurer_id"]
+            isOneToOne: false
+            referencedRelation: "insurers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           company_name: string
@@ -433,6 +736,65 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      queries: {
+        Row: {
+          created_at: string
+          filters: Json | null
+          id: string
+          query: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          filters?: Json | null
+          id?: string
+          query: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          filters?: Json | null
+          id?: string
+          query?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      sections: {
+        Row: {
+          created_at: string
+          document_id: string
+          heading_path: string | null
+          id: string
+          page_end: number | null
+          page_start: number | null
+        }
+        Insert: {
+          created_at?: string
+          document_id: string
+          heading_path?: string | null
+          id?: string
+          page_end?: number | null
+          page_start?: number | null
+        }
+        Update: {
+          created_at?: string
+          document_id?: string
+          heading_path?: string | null
+          id?: string
+          page_end?: number | null
+          page_start?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sections_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents_v2"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -514,6 +876,28 @@ export type Database = {
           similarity: number
           summary: string
           title: string
+        }[]
+      }
+      search_insurance_chunks: {
+        Args: {
+          insurer_filter?: string
+          line_of_business_filter?: string
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          chunk_id: string
+          chunk_text: string
+          document_id: string
+          document_title: string
+          insurer_name: string
+          metadata: Json
+          page: number
+          product_name: string
+          section_id: string
+          similarity: number
+          version_label: string
         }[]
       }
     }
