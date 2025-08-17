@@ -26,38 +26,46 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="types" className="w-full">
-          <TabsList className="grid w-full grid-cols-8">
-            <TabsTrigger value="types" className="flex items-center gap-2">
+          <TabsList className="flex flex-wrap w-full gap-1 h-auto p-1">
+            <TabsTrigger value="types" className="flex items-center gap-2 text-xs px-3 py-2">
               <FileText className="h-4 w-4" />
-              Verzekeringtypes
+              <span className="hidden sm:inline">Verzekeringtypes</span>
+              <span className="sm:hidden">Types</span>
             </TabsTrigger>
-            <TabsTrigger value="companies" className="flex items-center gap-2">
+            <TabsTrigger value="companies" className="flex items-center gap-2 text-xs px-3 py-2">
               <Building className="h-4 w-4" />
-              Maatschappijen
+              <span className="hidden sm:inline">Maatschappijen</span>
+              <span className="sm:hidden">Bedrijven</span>
             </TabsTrigger>
-            <TabsTrigger value="reassign" className="flex items-center gap-2">
+            <TabsTrigger value="reassign" className="flex items-center gap-2 text-xs px-3 py-2">
               <RotateCcw className="h-4 w-4" />
-              Document Herindeling
+              <span className="hidden sm:inline">Document Herindeling</span>
+              <span className="sm:hidden">Herindeling</span>
             </TabsTrigger>
-            <TabsTrigger value="reprocess" className="flex items-center gap-2">
+            <TabsTrigger value="reprocess" className="flex items-center gap-2 text-xs px-3 py-2">
               <RefreshCw className="h-4 w-4" />
-              PDF Extractie Herstel
+              <span className="hidden sm:inline">PDF Extractie Herstel</span>
+              <span className="sm:hidden">PDF Herstel</span>
             </TabsTrigger>
-            <TabsTrigger value="embeddings" className="flex items-center gap-2">
+            <TabsTrigger value="embeddings" className="flex items-center gap-2 text-xs px-3 py-2">
               <Zap className="h-4 w-4" />
-              AI Processing
+              <span className="hidden sm:inline">AI Processing</span>
+              <span className="sm:hidden">AI</span>
             </TabsTrigger>
-            <TabsTrigger value="audit" className="flex items-center gap-2">
+            <TabsTrigger value="audit" className="flex items-center gap-2 text-xs px-3 py-2">
               <Shield className="h-4 w-4" />
-              Audit Log
+              <span className="hidden sm:inline">Audit Log</span>
+              <span className="sm:hidden">Audit</span>
             </TabsTrigger>
-            <TabsTrigger value="feedback" className="flex items-center gap-2">
+            <TabsTrigger value="feedback" className="flex items-center gap-2 text-xs px-3 py-2">
               <MessageSquare className="h-4 w-4" />
-              Message Feedback
+              <span className="hidden sm:inline">Message Feedback</span>
+              <span className="sm:hidden">Feedback</span>
             </TabsTrigger>
-            <TabsTrigger value="migration" className="flex items-center gap-2">
+            <TabsTrigger value="migration" className="flex items-center gap-2 text-xs px-3 py-2">
               <Database className="h-4 w-4" />
-              Document Migratie
+              <span className="hidden sm:inline">Document Migratie</span>
+              <span className="sm:hidden">Migratie</span>
             </TabsTrigger>
           </TabsList>
           
