@@ -299,36 +299,6 @@ const Chat = () => {
           content: msg.content,
         }));
 
-      // Preflight: toon vragenlijst als info ontbreekt
-      const clientType = (selectedClient?.client_type as 'private' | 'business' | undefined) ?? intakeData?.client_type;
-      const hasSufficientInfo = Boolean(intakeData);
-      if (!hasSufficientInfo) {
-        const clientName = clientType === 'business'
-          ? (selectedClient?.company_name || intakeData?.company_name)
-          : (selectedClient?.full_name || intakeData?.full_name);
-        const contextNote = clientName
-          ? `Hallo! Om gericht advies te geven voor ${clientName} heb ik aanvullende informatie nodig.`
-          : `Hallo! Om gericht advies te geven heb ik aanvullende informatie nodig.`;
-        const preflightContent = getPreflightQuestionnaire(
-          clientType,
-          contextNote + " Beantwoord onderstaande vragen of start de intake via de knop bovenaan."
-        );
-
-        const { data: preMsg, error: preErr } = await supabase
-          .from('messages')
-          .insert({
-            conversation_id: activeConversation.id,
-            role: 'assistant',
-            content: preflightContent,
-          })
-          .select()
-          .single();
-        if (preErr) throw preErr;
-        setMessages((prev) => [...prev, preMsg as Message]);
-        setIsLoading(false);
-        setClientPanelOpen(true);
-        return;
-      }
 
       // Call Coen AI met client context
       const { data: aiData, error: aiError } = await supabase.functions.invoke('coen-chat', {
