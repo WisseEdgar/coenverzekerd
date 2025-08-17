@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -145,155 +145,120 @@ export function InsuranceChat() {
     setMessages([welcomeMessage]);
   };
 
-  const performSearch = async (query: string): Promise<SearchResult[]> => {
+  const performSearch = useCallback(async (query: string): Promise<SearchResult[]> => {
     try {
-      const { data, error } = await supabase.functions.invoke('query-index', {
-        body: {
-          query: query,
-          filters: searchFilters,
-          k: 10
-        }
-      });
-
-      if (error) throw error;
-
-      return data.results || [];
+      // The search is now handled within the chat-answer function
+      // This function is kept for potential future direct search needs
+      return [];
     } catch (error) {
       console.error('Search error:', error);
       return [];
     }
-  };
+  }, [searchFilters]);
 
-  const generateResponse = async (userMessage: string, searchResults: SearchResult[]): Promise<string> => {
-    // Build context from search results
-    const documentsContext = searchResults.length > 0 
-      ? searchResults.map((result, index) => 
-          `Document ${index + 1}: ${result.document_title} (${result.insurer_name} - ${result.product_name})\nPagina ${result.page}\nInhoud: ${result.chunk_text}\nRelevantie: ${(result.similarity * 100).toFixed(1)}%\n---`
-        ).join('\n')
-      : "Geen relevante documenten gevonden in de database.";
-
-    // Build client context
-    let contextPrompt = `CLIENT CONTEXT:\n`;
-    contextPrompt += `Type: ${clientContext.client_type === 'bedrijf' ? 'Zakelijke klant' : 'Particuliere klant'}\n`;
-    if (clientContext.company_name) contextPrompt += `Bedrijf: ${clientContext.company_name}\n`;
-    if (clientContext.full_name) contextPrompt += `Naam: ${clientContext.full_name}\n`;
-    if (clientContext.employees_count) contextPrompt += `Medewerkers: ${clientContext.employees_count}\n`;
-    if (clientContext.annual_revenue) contextPrompt += `Jaaromzet: €${clientContext.annual_revenue}\n`;
-    contextPrompt += `Situatie: ${clientContext.situation_description}\n`;
-    contextPrompt += `Verzekeringsbehoefte: ${clientContext.insurance_needs}\n`;
-    if (clientContext.current_coverage) contextPrompt += `Huidige dekking: ${clientContext.current_coverage}\n`;
-    if (clientContext.budget) contextPrompt += `Budget: ${clientContext.budget}\n`;
-
-    const systemPrompt = `Je bent een Nederlandse verzekeringsvergelijker-expert. Geef altijd antwoorden in het Nederlands.
-
-BELANGRIJKE REGELS:
-1. Citeer ALTIJD specifieke documenten bij feitelijke uitspraken
-2. Gebruik format: [Verzekeraar – Product – Document, Sectie, p. X]
-3. Geen antwoorden zonder bronvermelding
-4. Bij onzekere informatie: vermeld dit expliciet
-5. Geef concrete, bruikbare adviezen
-
-${contextPrompt}
-
-BESCHIKBARE DOCUMENTEN:
-${documentsContext}
-
-INSTRUCTIES VOOR ANTWOORD:
-- Begin met korte samenvatting van de situatie
-- Lijst belangrijkste opties/verschillen op met bullets
-- Eindig elke bullet met citatie: [Verzekeraar – Product – Document, p. X]
-- Bij twijfel: "Deze informatie kon ik niet vinden in de beschikbare documenten"
-- Geef max 3-5 concrete opties die passen bij de situatie`;
-
+  const generateResponse = useCallback(async (userMessage: string, searchResults: SearchResult[]) => {
     try {
-      // For now, use a simple response generator
-      // In production, you would call an LLM API here
-      const mockResponse = `Gebaseerd op je situatie als ${clientContext.client_type === 'bedrijf' ? 'bedrijf' : 'particulier'} en je behoefte aan ${clientContext.insurance_needs}, heb ik de volgende opties gevonden:
-
-${searchResults.length > 0 ? searchResults.slice(0, 3).map((result, index) => 
-  `${index + 1}. **${result.insurer_name} - ${result.product_name}**
-   - Relevant voor: ${clientContext.insurance_needs}
-   - Bron: [${result.insurer_name} – ${result.product_name} – ${result.document_title}, p. ${result.page}]
-   - Relevantie: ${(result.similarity * 100).toFixed(1)}%`
-).join('\n\n') : 'Geen specifieke documenten gevonden die exact passen bij je vraag.'}
-
-${searchResults.length === 0 ? 
-  'ℹ️ **Opmerking**: Deze informatie kon ik niet vinden in de beschikbare verzekeringsdocumenten. Voor meer specifieke informatie adviseer ik contact op te nemen met een adviseur.' : 
-  'Voor meer gedetailleerde informatie over voorwaarden en premies kun je de volledige documenten raadplegen.'
-}`;
-
-      return mockResponse;
-
-    } catch (error) {
-      console.error('Response generation error:', error);
-      return 'Er is een fout opgetreden bij het genereren van het antwoord. Probeer het opnieuw.';
-    }
-  };
-
-  const handleSendMessage = async () => {
-    if (!currentMessage.trim() || isLoading) return;
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: currentMessage.trim(),
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setCurrentMessage('');
-    setIsLoading(true);
-
-    try {
-      // Perform semantic search
-      const searchResults = await performSearch(currentMessage.trim());
+      setIsLoading(true);
       
-      // Generate response based on search results
-      const responseContent = await generateResponse(currentMessage.trim(), searchResults);
-      
-      // Extract citations from search results
-      const citations: Citation[] = searchResults.slice(0, 5).map(result => ({
-        document_id: result.document_id,
-        document_title: result.document_title,
-        insurer_name: result.insurer_name,
-        product_name: result.product_name,
-        page: result.page,
-        version_label: result.version_label,
-        similarity: result.similarity
-      }));
+      // Prepare user context from client context
+      const userContextString = clientContext ? `
+Klanttype: ${clientContext.client_type}
+${clientContext.company_name ? `Bedrijf: ${clientContext.company_name}` : ''}
+${clientContext.situation_description ? `Situatie: ${clientContext.situation_description}` : ''}
+${clientContext.insurance_needs ? `Verzekeringsbehoefte: ${clientContext.insurance_needs}` : ''}
+      `.trim() : undefined;
 
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: responseContent,
-        timestamp: new Date(),
-        citations: citations,
-        searchResults: searchResults
+      // Call the chat-answer Edge Function
+      const response = await supabase.functions.invoke('chat-answer', {
+        body: {
+          query: userMessage,
+          filters: {
+            lob: searchFilters.line_of_business || null,
+            insurer_name: searchFilters.insurer || null
+          },
+          userContext: userContextString
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Er is een fout opgetreden bij het genereren van het antwoord');
+      }
+
+      const { answer, passages } = response.data;
+
+      // Convert passages to citations
+      const citations: Citation[] = passages?.slice(0, 5).map((passage: any, index: number) => ({
+        id: `citation-${index}`,
+        document_id: passage.document_id,
+        title: passage.document_title || 'Onbekend document',
+        page: passage.page || 1,
+        insurer: passage.insurer_name || 'Onbekende verzekeraar',
+        product: passage.product_name || 'Onbekend product'
+      })) || [];
+
+      return { 
+        response: answer || 'Geen antwoord gegenereerd.', 
+        citations 
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error('Error generating response:', error);
+      
+      // Fallback response
+      return {
+        response: `Er is een fout opgetreden bij het verwerken van uw vraag: ${error instanceof Error ? error.message : 'Onbekende fout'}. Probeer het opnieuw of contacteer de ondersteuning.`,
+        citations: []
+      };
+    } finally {
+      setIsLoading(false);
+    }
+  }, [searchFilters, clientContext]);
 
-    } catch (error: any) {
-      console.error('Chat error:', error);
+  const handleSendMessage = useCallback(async () => {
+    if (!currentMessage.trim() || isLoading) return;
+
+    const userMessage = currentMessage.trim();
+    setCurrentMessage('');
+    
+    // Add user message to chat
+    const newUserMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: userMessage,
+      timestamp: new Date(),
+      citations: []
+    };
+    
+    setMessages(prev => [...prev, newUserMessage]);
+    
+    try {
+      // Generate response using the chat-answer Edge Function
+      const { response, citations } = await generateResponse(userMessage, []);
+      
+      // Add assistant message to chat
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant', 
+        content: response,
+        timestamp: new Date(),
+        citations
+      };
+      
+      setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error('Error handling message:', error);
       
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Er is een fout opgetreden bij het verwerken van je vraag. Probeer het opnieuw.',
-        timestamp: new Date()
+        content: 'Er is een fout opgetreden bij het verwerken van uw bericht. Probeer het opnieuw.',
+        timestamp: new Date(),
+        citations: []
       };
-
-      setMessages(prev => [...prev, errorMessage]);
       
-      toast({
-        title: "Fout bij verwerken vraag",
-        description: error.message || 'Er is een onbekende fout opgetreden.',
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
+      setMessages(prev => [...prev, errorMessage]);
     }
-  };
+  }, [currentMessage, isLoading, generateResponse]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
