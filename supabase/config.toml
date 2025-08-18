@@ -12,6 +12,9 @@ enabled = true
 port = 54324
 external_url = "http://localhost:54324"
 
+[functions.process-manual-text]
+verify_jwt = true
+
 [functions.extract-pdf]
 verify_jwt = true
 

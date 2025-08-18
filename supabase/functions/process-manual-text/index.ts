@@ -53,27 +53,25 @@ serve(async (req) => {
     // Clean and normalize text
     const cleanText = text.trim().replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n');
 
-    // Smart chunking - respect paragraph boundaries and markdown structure
-    const chunks = createIntelligentChunks(cleanText);
-    console.log(`Created ${chunks.length} chunks`);
-
-    // Generate embeddings for all chunks
-    const embeddings = await generateEmbeddings(chunks, openaiApiKey);
-    console.log(`Generated ${embeddings.length} embeddings`);
+    // Generate embedding for the full document
+    const documentEmbedding = await generateEmbeddings([cleanText], openaiApiKey);
+    console.log(`Generated document embedding`);
 
     // Create document record first
     const { data: document, error: docError } = await supabase
-      .from('documents_v2')
+      .from('documents')
       .insert({
         title: title.trim(),
         filename: `manual-${Date.now()}.txt`,
-        file_path: null,
-        processing_status: 'completed',
+        file_path: `manual-uploads/${Date.now()}.txt`,
+        mime_type: 'text/plain',
         extracted_text: cleanText,
-        page_count: 1,
-        token_count: Math.ceil(cleanText.length / 4),
-        user_id: user.id,
         summary: generateSummary(cleanText),
+        embedding: documentEmbedding[0],
+        uploaded_by: user.id,
+        insurance_type_id: null,
+        insurance_company_id: null,
+        file_size: cleanText.length,
       })
       .select()
       .single();
@@ -85,46 +83,11 @@ serve(async (req) => {
 
     console.log(`Created document: ${document.id}`);
 
-    // Insert chunks and embeddings
-    const chunksToInsert = chunks.map((chunk, index) => ({
-      document_id: document.id,
-      text: chunk,
-      page: 1,
-      token_count: Math.ceil(chunk.length / 4),
-      metadata: { chunk_index: index }
-    }));
-
-    const { data: insertedChunks, error: chunkError } = await supabase
-      .from('chunks')
-      .insert(chunksToInsert)
-      .select();
-
-    if (chunkError) {
-      console.error('Chunk insertion error:', chunkError);
-      throw new Error(`Failed to create chunks: ${chunkError.message}`);
-    }
-
-    // Insert embeddings
-    const embeddingsToInsert = insertedChunks!.map((chunk, index) => ({
-      chunk_id: chunk.id,
-      embedding: embeddings[index]
-    }));
-
-    const { error: embeddingError } = await supabase
-      .from('chunk_embeddings')
-      .insert(embeddingsToInsert);
-
-    if (embeddingError) {
-      console.error('Embedding insertion error:', embeddingError);
-      throw new Error(`Failed to create embeddings: ${embeddingError.message}`);
-    }
-
-    console.log(`Successfully processed manual text: ${chunks.length} chunks, ${embeddings.length} embeddings`);
+    console.log(`Successfully processed manual text: ${cleanText.length} characters`);
 
     return new Response(JSON.stringify({
       success: true,
       documentId: document.id,
-      chunkCount: chunks.length,
       characterCount: cleanText.length,
       tokenCount: Math.ceil(cleanText.length / 4)
     }), {
@@ -198,7 +161,7 @@ async function generateEmbeddings(texts: string[], apiKey: string): Promise<numb
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'text-embedding-3-small',
+      model: 'text-embedding-ada-002',
       input: texts,
     }),
   });
