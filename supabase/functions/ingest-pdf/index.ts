@@ -113,33 +113,28 @@ async function extractTextFromPDF(buffer: ArrayBuffer, filename: string): Promis
 async function extractTextAdvancedFallback(uint8Array: Uint8Array): Promise<string> {
   const text = new TextDecoder('utf-8', { fatal: false }).decode(uint8Array);
   
-  // Method 1: Extract from PDF text objects with comprehensive patterns
+  // Method 1: Extract from PDF text objects with improved patterns
   const textObjects: string[] = [];
   
-  // Enhanced patterns for Dutch insurance documents
+  // Refined patterns that avoid PDF metadata
   const patterns = [
-    /BT\s+(.*?)\s+ET/gs,                    // Basic text objects
-    /\(([^)]{2,})\)\s*Tj/g,                 // Simple text showing (reduced min)
-    /\[([^\]]{5,})\]\s*TJ/g,               // Text array showing (reduced min)
-    />\s*\(([^)]{3,})\)/g,                 // Text after angle brackets
-    /\/F\d+\s+\d+\s+Tf\s+\((.*?)\)/g,     // Font definitions with text
+    /\(([A-Za-z][A-Za-z0-9\s\.,!?;:'"€\-]{4,}[A-Za-z0-9\.,!?])\)\s*Tj/g,  // Text with word boundaries
+    /\[([A-Za-z][A-Za-z0-9\s\.,!?;:'"€\-]+[A-Za-z0-9\.,!?])\]\s*TJ/g,     // Text arrays with validation
   ];
   
   patterns.forEach(pattern => {
     let match;
     while ((match = pattern.exec(text)) !== null) {
       let textContent = match[1]
-        .replace(/Tj|TJ|Td|TD|Tm|Tf|BT|ET/g, ' ')
-        .replace(/\/F\d+\s*\d*/g, '')
-        .replace(/\[|\]|\(|\)/g, '')
         .replace(/\\\w+/g, '')              // Remove escape sequences
-        .replace(/[0-9\.\-\s]{4,}/g, ' ')   // Remove number sequences
-        .replace(/\s+/g, ' ')
+        .replace(/\s+/g, ' ')               // Normalize spaces
         .trim();
       
-      // Less strict filtering for better text capture
-      if (textContent.length > 3 && 
-          /[a-zA-Z]{2,}/.test(textContent)) {
+      // Strict filtering for actual text content
+      if (textContent.length > 10 && 
+          /^[A-Za-z][A-Za-z0-9\s\.,!?;:'"€\-]*[A-Za-z0-9\.,!?]$/.test(textContent) &&
+          !textContent.includes('<<') && !textContent.includes('>>') &&
+          (textContent.match(/[A-Za-z]/g) || []).length > textContent.length * 0.6) {
         textObjects.push(textContent);
       }
     }
@@ -147,26 +142,30 @@ async function extractTextAdvancedFallback(uint8Array: Uint8Array): Promise<stri
   
   let combinedText = textObjects.join(' ').trim();
   
-  // Method 2: Enhanced character extraction with better filtering
+  // Method 2: Line-based extraction for better content detection
   if (combinedText.length < 200) {
-    console.log('Attempting enhanced character extraction');
+    console.log('Attempting line-based extraction');
     
-    // Extract readable content with more permissive filtering
+    // Extract readable content by analyzing lines
     const lines = text.split(/[\r\n]+/)
-      .map(line => line.replace(/[^\x20-\x7E\u00A0-\u017F\u0100-\u024F\u2000-\u206F]/g, ' ')) // Keep more Unicode ranges
+      .map(line => line.replace(/[^\x20-\x7E\u00A0-\u017F\u0100-\u024F]/g, ' ')) // Standard printable chars + Dutch
       .map(line => line.replace(/\s+/g, ' ').trim())
       .filter(line => {
-        // Keep lines with reasonable word content
+        // Keep lines that look like actual text content
         const words = line.split(/\s+/).filter(w => w.length > 1 && /[a-zA-Z]/.test(w));
-        return words.length >= 2 && line.length > 10 && line.length < 200;
+        return words.length >= 3 && line.length > 15 && line.length < 200;
       })
       .filter(line => {
-        // Remove obvious PDF artifacts
-        return !line.includes('%PDF') && 
+        // Remove PDF artifacts and metadata
+        return !line.includes('%PDF') &&
+               !line.includes('<<') && !line.includes('>>') &&
                !line.includes('endobj') && 
                !line.includes('xref') &&
                !line.includes('stream') &&
-               !line.match(/^[0-9\s\.\-]{10,}$/);
+               !line.match(/^[0-9\s\.\-]{10,}$/) &&
+               !line.match(/^[0-9]+\s+[0-9]+\s+(R|obj)/) &&
+               !/^\/[A-Z][a-zA-Z]*/.test(line) &&  // PDF commands
+               (line.match(/[A-Za-z]/g) || []).length > line.length * 0.5;
       });
     
     const readableText = lines.join(' ').trim();
@@ -176,15 +175,16 @@ async function extractTextAdvancedFallback(uint8Array: Uint8Array): Promise<stri
     }
   }
   
-  // Method 3: Emergency extraction for stubborn PDFs
+  // Method 3: Word-based extraction as last resort
   if (combinedText.length < 100) {
-    console.log('Attempting emergency text extraction');
+    console.log('Attempting word-based extraction');
     
-    // Look for any readable words in the entire buffer
+    // Extract individual words that look legitimate
     const emergencyText = text
       .replace(/[^\x20-\x7E\u00A0-\u017F\u0100-\u024F]/g, ' ')
       .split(/\s+/)
-      .filter(word => word.length > 2 && /^[a-zA-Z][a-zA-Z\-']*[a-zA-Z]?$/.test(word))
+      .filter(word => word.length > 3 && /^[A-Za-z][A-Za-z0-9\-']*[A-Za-z]$/.test(word))
+      .filter(word => !word.match(/^[A-Z]{4,}$/))  // Remove all-caps abbreviations (likely PDF objects)
       .filter((word, index, arr) => arr.indexOf(word) === index) // Remove duplicates
       .join(' ');
     
@@ -193,9 +193,9 @@ async function extractTextAdvancedFallback(uint8Array: Uint8Array): Promise<stri
     }
   }
   
-  // More lenient validation
-  if (combinedText.length < 20) {
-    throw new Error(`PDF text extraction insufficient: only ${combinedText.length} characters extracted. File may be image-based or encrypted.`);
+  // Strict validation for quality
+  if (combinedText.length < 50) {
+    throw new Error(`PDF text extraction failed: only ${combinedText.length} characters of readable text found. Document may be image-based, encrypted, or corrupted.`);
   }
   
   return combinedText;
@@ -204,8 +204,24 @@ async function extractTextAdvancedFallback(uint8Array: Uint8Array): Promise<stri
 // Enhanced content validation
 async function validateExtractedContent(text: string, filename: string): Promise<{isValid: boolean, reason?: string}> {
   // Basic length check
-  if (!text || text.length < 50) {
+  if (!text || text.length < 100) {
     return { isValid: false, reason: `Insufficient content (${text.length} chars)` };
+  }
+  
+  // Check for PDF artifacts that indicate bad extraction
+  const pdfArtifacts = [
+    /<<.*?>>/g,                    // PDF objects
+    /\/[A-Z][a-zA-Z]+/g,          // PDF commands
+    /\d+\s+\d+\s+R\b/g,           // PDF references
+    /obj\b|endobj\b/g,            // PDF object markers
+    /stream\b|endstream\b/g,      // PDF stream markers
+  ];
+  
+  for (const pattern of pdfArtifacts) {
+    const matches = (text.match(pattern) || []).length;
+    if (matches > 5) {
+      return { isValid: false, reason: `Contains PDF artifacts (${matches} matches of ${pattern})` };
+    }
   }
   
   // Check for mock/sample data patterns
@@ -226,23 +242,34 @@ async function validateExtractedContent(text: string, filename: string): Promise
   }
   
   // Check text quality - should have reasonable word/sentence structure
-  const words = text.split(/\s+/).filter(w => w.length > 2);
+  const words = text.split(/\s+/).filter(w => w.length > 2 && /[A-Za-z]/.test(w));
   const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 10);
   
-  if (words.length < 20) {
+  if (words.length < 30) {
     return { isValid: false, reason: `Too few meaningful words (${words.length})` };
   }
   
-  if (sentences.length < 3) {
+  if (sentences.length < 5) {
     return { isValid: false, reason: `Too few sentences (${sentences.length})` };
   }
   
-  // Check for reasonable character distribution
+  // Check for reasonable character distribution - should be mostly readable text
   const alphaNumeric = (text.match(/[a-zA-Z0-9]/g) || []).length;
   const alphaRatio = alphaNumeric / text.length;
   
-  if (alphaRatio < 0.4) {
+  if (alphaRatio < 0.6) {
     return { isValid: false, reason: `Low alphanumeric ratio (${(alphaRatio * 100).toFixed(1)}%)` };
+  }
+  
+  // Check for reasonable Dutch/English text patterns
+  const dutchWords = text.match(/\b(de|het|een|van|in|op|met|voor|door|uit|aan|bij|over|onder|tegen|tussen|na|binnen|buiten|zonder|tijdens|volgens|zoals|omdat|wanneer|waar|wie|wat|waarom|verzekering|dekking|premie|risico|schade|voorwaarden|polishouder)\b/gi) || [];
+  const englishWords = text.match(/\b(the|and|of|to|in|for|with|on|by|from|at|an|as|are|was|were|been|have|has|had|will|would|could|should|may|might|can|insurance|coverage|premium|risk|damage|terms|policyholder)\b/gi) || [];
+  
+  const totalKnownWords = dutchWords.length + englishWords.length;
+  const wordDensity = totalKnownWords / Math.max(words.length, 1);
+  
+  if (wordDensity < 0.05) {
+    return { isValid: false, reason: `No recognizable Dutch/English content (${(wordDensity * 100).toFixed(1)}% known words)` };
   }
   
   return { isValid: true };
