@@ -241,7 +241,7 @@ async function validateExtractedContent(text: string, filename: string): Promise
   const alphaNumeric = (text.match(/[a-zA-Z0-9]/g) || []).length;
   const alphaRatio = alphaNumeric / text.length;
   
-  if (alphaRatio < 0.6) {
+  if (alphaRatio < 0.4) {
     return { isValid: false, reason: `Low alphanumeric ratio (${(alphaRatio * 100).toFixed(1)}%)` };
   }
   
