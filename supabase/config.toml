@@ -18,7 +18,7 @@ verify_jwt = true
 [functions.process-document]
 verify_jwt = true
 
-[functions.ingest-pdf]
+[functions.extract-pdf]
 verify_jwt = true
 
 [functions.chat-answer]

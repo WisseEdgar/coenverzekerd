@@ -205,7 +205,7 @@ export function InsuranceDocumentUpload() {
       setState(prev => ({ ...prev, uploadProgress: 75, processing: true }));
 
       // Trigger PDF processing with improved error handling
-      const { data: processResult, error: processError } = await supabase.functions.invoke('ingest-pdf', {
+      const { data: processResult, error: processError } = await supabase.functions.invoke('extract-pdf', {
         body: {
           file_path: filePath,
           document_id: document.id

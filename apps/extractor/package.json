@@ -1,0 +1,20 @@
+{
+  "name": "pdf-extractor",
+  "version": "1.0.0",
+  "description": "Lightweight PDF text extraction service",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "build": "bun build src/index.ts --outdir=dist --target=node",
+    "test": "bun test",
+    "bench": "bun run benchmark/bench.ts"
+  },
+  "dependencies": {
+    "pdfjs-dist": "^4.0.379",
+    "@supabase/supabase-js": "^2.52.1"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

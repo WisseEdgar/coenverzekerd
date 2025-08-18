@@ -60,6 +60,31 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## PDF Extraction Pipeline
+
+🔧 **Rebuilt and hardened PDF text extraction** (December 2025):
+
+- **New Architecture**: Unified `extract-pdf` function replaces unreliable regex-based extraction
+- **PDF.js Integration**: Proper text layer extraction with OCR fallback using Tesseract.js  
+- **Improved Validation**: Relaxed 40% alphanumeric threshold (down from 60%)
+- **Better Error Handling**: Specific error messages instead of generic failures
+- **Performance Tested**: Comprehensive test suite and benchmarking
+- **Dependency Cleanup**: Removed heavy/problematic dependencies
+
+### Quick Test
+```bash
+# Run extraction tests
+bun test tests/pdf-extraction.test.ts
+
+# Performance benchmark  
+bun run benchmark/bench.ts
+
+# CLI extraction (development)
+bun run pdfx your-document.pdf --format json --out result.json
+```
+
+See [README-extraction.md](./README-extraction.md) for full documentation.
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/71fdb420-8652-4002-bb99-93afeaa561d7) and click on Share -> Publish.
