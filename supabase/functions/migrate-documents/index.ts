@@ -321,21 +321,22 @@ serve(async (req) => {
 
           console.log(`Created documents_v2 entry: ${newDoc.id}`);
 
-          // If we have extracted text, call ingest-pdf to process it
+          // Call extract-pdf to process the new document
           if (doc.extracted_text && doc.extracted_text.length > 100) {
-            console.log(`Processing PDF text for ${doc.title}...`);
+            console.log(`Processing existing extracted text for ${doc.title}...`);
             
-            const { error: ingestError } = await supabase.functions.invoke('ingest-pdf', {
+            const { error: extractError } = await supabase.functions.invoke('extract-pdf', {
               body: {
-                document_id: newDoc.id,
-                pages: [{ page: 1, text: doc.extracted_text }]
+                document_id: newDoc.id
               }
             });
 
-            if (ingestError) {
-              console.error(`Error processing PDF text: ${ingestError.message}`);
-              // Continue with migration even if embedding fails
+            if (extractError) {
+              console.error(`Error processing PDF: ${extractError.message}`);
+              // Continue with migration even if processing fails
             }
+          } else {
+            console.log(`No extracted text available for ${doc.title}, skipping processing`);
           }
 
           results.push({

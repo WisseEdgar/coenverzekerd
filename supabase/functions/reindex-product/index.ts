@@ -107,28 +107,21 @@ serve(async (req) => {
       console.log(`Cleaned up document ${document.id}`);
     }
 
-    // Trigger reprocessing for each document by calling ingest-pdf
+    // Trigger reprocessing for each document by calling extract-pdf
     const reprocessingPromises = documents.map(async (document) => {
       try {
-        const response = await fetch(`${supabaseUrl}/functions/v1/ingest-pdf`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${supabaseServiceKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            file_path: document.file_path,
-            product_id: document.id
-          }),
+        const { data: extractResult, error: extractError } = await supabase.functions.invoke('extract-pdf', {
+          body: {
+            document_id: document.id
+          }
         });
 
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+        if (extractError) {
+          throw new Error(`Extract error: ${extractError.message}`);
         }
 
-        const result = await response.json();
-        console.log(`Reprocessed document ${document.id}:`, result);
-        return { document_id: document.id, success: true, result };
+        console.log(`Reprocessed document ${document.id}:`, extractResult);
+        return { document_id: document.id, success: true, result: extractResult };
       } catch (error) {
         console.error(`Failed to reprocess document ${document.id}:`, error);
         return { document_id: document.id, success: false, error: error.message };

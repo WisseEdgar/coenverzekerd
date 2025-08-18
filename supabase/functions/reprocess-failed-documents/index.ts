@@ -215,28 +215,26 @@ serve(async (req) => {
             .update({ processing_status: 'pending' })
             .eq('id', documentId);
 
-          // Call ingest-pdf function to reprocess
-          const { data: ingestResult, error: ingestError } = await supabase.functions.invoke('ingest-pdf', {
+          // Call extract-pdf function to reprocess
+          const { data: extractResult, error: extractError } = await supabase.functions.invoke('extract-pdf', {
             body: {
-              document_id: documentId,
-              file_path: doc.file_path
+              document_id: documentId
             }
           });
 
-          if (ingestError) {
+          if (extractError) {
             results.push({
               document_id: documentId,
               title: doc.title,
               success: false,
-              error: `Ingest failed: ${ingestError.message}`
+              error: `Extract failed: ${extractError.message}`
             });
           } else {
             results.push({
               document_id: documentId,
               title: doc.title,
               success: true,
-              pages: ingestResult.pages,
-              chunks: ingestResult.chunks
+              result: extractResult
             });
           }
 
