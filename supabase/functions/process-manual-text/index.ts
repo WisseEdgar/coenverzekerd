@@ -59,10 +59,23 @@ serve(async (req) => {
     if (cleanText.length > 6000) {
       console.log(`Document is large (${cleanText.length} chars), using chunking approach`);
       
+      // Get the Manual Text product ID
+      const { data: product, error: productError } = await supabase
+        .from('products')
+        .select('id')
+        .eq('name', 'Manual Text')
+        .single();
+      
+      if (productError || !product) {
+        console.error('Failed to find Manual Text product:', productError);
+        throw new Error('Manual Text product not found');
+      }
+      
       // Create document record first (without embedding)
       const { data: doc, error: docError } = await supabase
         .from('documents_v2')
         .insert({
+          product_id: product.id,
           title: title.trim(),
           filename: `manual-${Date.now()}.txt`,
           file_path: `manual-uploads/${Date.now()}.txt`,
