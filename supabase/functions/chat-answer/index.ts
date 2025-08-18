@@ -262,7 +262,7 @@ serve(async (req) => {
 
     // Step 3: Prepare context for the LLM
     const context = finalResults
-      .filter((result: SearchResult) => result.similarity > 0.3) // Filter low-similarity results
+      .filter((result: SearchResult) => result.similarity > 0.01) // Filter very low-similarity results
       .map((result: SearchResult, index: number) => {
         return `[#${index + 1}] ${result.insurer_name} - ${result.product_name} (${result.document_title}${result.version_label ? ` ${result.version_label}` : ''}) - p.${result.page}
 Similarity: ${result.similarity.toFixed(3)}
