@@ -61,17 +61,13 @@ serve(async (req) => {
       
       // Create document record first (without embedding)
       const { data: doc, error: docError } = await supabase
-        .from('documents')
+        .from('documents_v2')
         .insert({
           title: title.trim(),
           filename: `manual-${Date.now()}.txt`,
           file_path: `manual-uploads/${Date.now()}.txt`,
-          mime_type: 'text/plain',
-          extracted_text: cleanText,
-          summary: generateSummary(cleanText),
-          uploaded_by: user.id,
-          insurance_type_id: null,
-          insurance_company_id: null,
+          source_type: 'manual_text',
+          processing_status: 'completed',
           file_size: cleanText.length,
         })
         .select()
