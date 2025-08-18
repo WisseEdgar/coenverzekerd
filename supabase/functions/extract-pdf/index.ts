@@ -60,7 +60,7 @@ async function extractWithPDFJS(pdfBuffer: Uint8Array): Promise<ExtractionResult
         .replace(/\s+/g, ' ')
         .trim();
       
-      if (pageText.length > 20) { // Only include pages with meaningful content
+      if (pageText.length > 10) { // Include pages with any reasonable content
         pages.push({
           page: pageNum,
           text: pageText
@@ -97,7 +97,7 @@ async function extractWithSimpleFallback(pdfBuffer: Uint8Array): Promise<Extract
     
     const extractedText = extractReadableText(binaryString);
     
-    if (extractedText.length < 30) {
+    if (extractedText.length < 15) {
       throw new Error('Minimal readable text found in document');
     }
 
@@ -137,14 +137,23 @@ function createMinimalExtraction(fileName: string = 'document'): ExtractionResul
 function extractReadableText(pdfContent: string): string {
   const textChunks: string[] = [];
   
-  // Improved patterns for Dutch insurance documents
+  // Improved patterns for Dutch insurance documents with more lenient matching
   const patterns = [
-    // Standard PDF text objects with better validation
-    /\(([A-Za-z][A-Za-z0-9\s\.,!?;:'"€\-]{10,}[A-Za-z0-9\.,!?])\)\s*Tj/g,
-    /\[([A-Za-z][A-Za-z0-9\s\.,!?;:'"€\-]{10,}[A-Za-z0-9\.,!?])\]\s*TJ/g,
+    // Standard PDF text objects
+    /\(([A-Za-z][A-Za-z0-9\s\.,!?;:'"€\-]{8,}[A-Za-z0-9\.,!?])\)\s*Tj/g,
+    /\[([A-Za-z][A-Za-z0-9\s\.,!?;:'"€\-]{8,}[A-Za-z0-9\.,!?])\]\s*TJ/g,
     
-    // Direct text patterns (for simpler PDFs)
-    /\b[A-Z][a-z]{3,}\s+[a-z]{3,}[A-Za-z\s\.,!?;:'"€\-]{10,}/g,
+    // More flexible text patterns for Dutch content
+    /\b[A-Za-z]{2,}\s+[A-Za-z0-9\s\.,!?;:'"€\-]{8,}/g,
+    
+    // Pattern for text between parentheses (common in PDFs)
+    /\(([^)]{15,200})\)/g,
+    
+    // Pattern for text after BT (BeginText) operators
+    /BT[^ET]*?([A-Za-z][A-Za-z0-9\s\.,!?;:'"€\-]{15,})[^ET]*?ET/g,
+    
+    // Pattern for standalone text strings
+    /([A-Za-z][a-zA-Z\s]{10,}(?:[a-zA-Z\s\.,!?;:'"€\-]*[a-zA-Z])?)/g
   ];
 
   patterns.forEach(pattern => {
@@ -158,13 +167,13 @@ function extractReadableText(pdfContent: string): string {
         .replace(/\s+/g, ' ')
         .trim();
       
-      // Quality checks for Dutch insurance content
-      if (text.length > 15 && 
-          text.length < 500 &&
+      // Quality checks for Dutch insurance content (more lenient)
+      if (text.length > 10 && 
+          text.length < 800 &&
           !text.includes('<<') && 
           !text.includes('>>') &&
           !text.match(/^[0-9\s\.\-]+$/) && // Not just numbers
-          (text.match(/[A-Za-z]/g) || []).length > text.length * 0.5) { // At least 50% letters
+          (text.match(/[A-Za-z]/g) || []).length > text.length * 0.3) { // At least 30% letters
         
         // Check for insurance-related content
         const insuranceWords = /verzekering|dekking|premie|polis|risico|schade|voorwaarden|aansprakelijk/gi;
@@ -182,22 +191,22 @@ function extractReadableText(pdfContent: string): string {
 
 // More lenient content validation
 function validateExtractedContent(text: string): { isValid: boolean; reason?: string } {
-  if (!text || text.length < 30) {
+  if (!text || text.length < 20) {
     return { isValid: false, reason: `Insufficient content (${text.length} chars)` };
   }
 
-  // Check for reasonable text structure with lower thresholds
+  // Check for reasonable text structure with very low thresholds
   const words = text.split(/\s+/).filter(w => w.length > 1);
   
-  if (words.length < 10) {
+  if (words.length < 5) {
     return { isValid: false, reason: `Too few words (${words.length})` };
   }
 
-  // Very relaxed alphanumeric ratio (25%)
+  // Very relaxed alphanumeric ratio (15%)
   const alphaNumeric = (text.match(/[a-zA-Z0-9]/g) || []).length;
   const alphaRatio = alphaNumeric / text.length;
   
-  if (alphaRatio < 0.25) {
+  if (alphaRatio < 0.15) {
     return { isValid: false, reason: `Low alphanumeric ratio (${(alphaRatio * 100).toFixed(1)}%)` };
   }
 
@@ -421,11 +430,7 @@ serve(async (req) => {
       .from('documents_v2')
       .update({ 
         processing_status: 'completed',
-        pages: extractionResult.pages.length,
-        metadata: {
-          extraction_method: extractionResult.method,
-          extraction_stats: extractionResult.stats
-        }
+        pages: extractionResult.stats.totalPages
       })
       .eq('id', body.document_id);
 
@@ -455,8 +460,7 @@ serve(async (req) => {
         await supabase
           .from('documents_v2')
           .update({ 
-            processing_status: 'failed',
-            metadata: { error: error.message }
+            processing_status: 'failed'
           })
           .eq('id', body.document_id);
       } catch (updateError) {
