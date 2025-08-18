@@ -1,4 +1,3 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -7,9 +6,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 
 interface PageText {
   page: number;
@@ -27,17 +26,16 @@ interface ExtractionResult {
   };
 }
 
-// PDF.js-based text extraction (primary method)
+// Enhanced PDF.js text extraction with better structure preservation
 async function extractWithPDFJS(pdfBuffer: Uint8Array): Promise<ExtractionResult> {
   try {
-    // Import PDF.js for Deno
-    const pdfjsLib = await import('https://esm.sh/pdfjs-dist@4.0.379');
+    // Import PDF.js ES module for Deno
+    const { default: pdfjs } = await import('https://esm.sh/pdfjs-dist@4.0.379/build/pdf.mjs');
     
-    // Configure worker for Deno environment
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@4.0.379/build/pdf.worker.min.js';
+    // Configure worker for Deno environment  
+    pdfjs.GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@4.0.379/build/pdf.worker.mjs';
     
-    // Load PDF document
-    const loadingTask = pdfjsLib.getDocument({
+    const loadingTask = pdfjs.getDocument({
       data: pdfBuffer,
       useSystemFonts: true,
       standardFontDataUrl: "https://esm.sh/pdfjs-dist@4.0.379/standard_fonts/",
@@ -47,20 +45,36 @@ async function extractWithPDFJS(pdfBuffer: Uint8Array): Promise<ExtractionResult
     const pages: PageText[] = [];
     let totalChars = 0;
 
-    // Extract text from each page
     for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
       const page = await pdfDocument.getPage(pageNum);
       const textContent = await page.getTextContent();
       
-      // Combine text items with proper spacing
-      const pageText = textContent.items
-        .map((item: any) => item.str)
-        .filter((text: string) => text.trim().length > 0)
-        .join(' ')
-        .replace(/\s+/g, ' ')
-        .trim();
+      // Build text with proper spacing and line breaks
+      const textItems = textContent.items as any[];
+      let pageText = '';
+      let lastY = null;
+      let lastX = null;
       
-      if (pageText.length > 10) { // Include pages with any reasonable content
+      for (const item of textItems) {
+        if (item.str?.trim()) {
+          // Add line break if significant Y position change
+          if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
+            pageText += '\n';
+          }
+          // Add space if same line but gap in X position
+          else if (lastX !== null && item.transform[4] - lastX > 10) {
+            pageText += ' ';
+          }
+          
+          pageText += item.str;
+          lastY = item.transform[5];
+          lastX = item.transform[4] + item.width;
+        }
+      }
+      
+      pageText = pageText.trim();
+      
+      if (pageText.length > 20) {
         pages.push({
           page: pageNum,
           text: pageText
@@ -85,20 +99,60 @@ async function extractWithPDFJS(pdfBuffer: Uint8Array): Promise<ExtractionResult
   }
 }
 
-// Simple fallback text extraction (for when PDF.js fails)
-async function extractWithSimpleFallback(pdfBuffer: Uint8Array): Promise<ExtractionResult> {
+// Enhanced binary pattern-based extraction for when PDF.js fails
+async function extractWithBinaryPatterns(pdfBuffer: Uint8Array): Promise<ExtractionResult> {
   try {
-    console.log('Using simple fallback extraction...');
+    console.log('Using enhanced binary pattern extraction...');
     
-    // Convert binary to string for pattern matching
-    const binaryString = Array.from(pdfBuffer)
-      .map(byte => String.fromCharCode(byte))
-      .join('');
+    const decoder = new TextDecoder('utf-8', { fatal: false });
+    const content = decoder.decode(pdfBuffer);
     
-    const extractedText = extractReadableText(binaryString);
+    const textChunks: string[] = [];
     
-    if (extractedText.length < 15) {
-      throw new Error('Minimal readable text found in document');
+    // Enhanced patterns for Dutch insurance documents
+    const patterns = [
+      // PDF text objects with better matching
+      /\(([^)]{20,300})\)\s*[Tt]j/g,
+      /\[([^\]]{20,300})\]\s*[Tt][Jj]/g,
+      
+      // Stream content between BT/ET markers
+      /BT\s+.*?([A-Za-z][^ET]{15,200}?)ET/gs,
+      
+      // Direct readable text (Dutch words)
+      /(?:^|[^a-zA-Z])([A-Z][a-z]{2,}\s+(?:[a-z]+\s+){2,}[a-z]+)/gm,
+      
+      // Insurance-specific terms
+      /(verzekering|dekking|premie|polis|voorwaarden|aansprakelijkheid|schade)[^.]{10,100}/gi,
+    ];
+
+    for (const pattern of patterns) {
+      let match;
+      while ((match = pattern.exec(content)) !== null) {
+        let text = match[1]?.trim();
+        if (!text) continue;
+        
+        // Clean up PDF encoding artifacts
+        text = text
+          .replace(/\\[rn]/g, ' ')
+          .replace(/\\\d{3}/g, '')
+          .replace(/\\u[0-9a-fA-F]{4}/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+        
+        // Quality checks
+        if (text.length > 15 && 
+            text.length < 500 &&
+            !text.match(/^[\d\s\-\.]+$/) &&
+            (text.match(/[a-zA-Z]/g) || []).length > text.length * 0.4) {
+          textChunks.push(text);
+        }
+      }
+    }
+
+    const extractedText = textChunks.join(' ').trim();
+    
+    if (extractedText.length < 50) {
+      throw new Error('Insufficient text extracted from binary patterns');
     }
 
     return {
@@ -112,8 +166,74 @@ async function extractWithSimpleFallback(pdfBuffer: Uint8Array): Promise<Extract
       }
     };
   } catch (error) {
-    console.error('Simple fallback extraction failed:', error);
-    throw new Error(`Simple extraction failed: ${error.message}`);
+    console.error('Binary pattern extraction failed:', error);
+    throw new Error(`Binary pattern extraction failed: ${error.message}`);
+  }
+}
+
+// OpenAI-based OCR for image PDFs (last resort)
+async function extractWithOpenAIOCR(pdfBuffer: Uint8Array, fileName: string): Promise<ExtractionResult> {
+  if (!OPENAI_API_KEY) {
+    throw new Error('OpenAI API key not configured for OCR');
+  }
+
+  try {
+    console.log('Attempting OpenAI Vision OCR...');
+    
+    // Convert PDF buffer to base64
+    const base64Pdf = btoa(String.fromCharCode(...pdfBuffer.slice(0, Math.min(pdfBuffer.length, 1000000)))); // Limit to 1MB
+    
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{
+          role: 'user',
+          content: `Extract all readable text from this insurance document. Focus on:
+- Policy terms and conditions
+- Coverage details
+- Insurance company information
+- Premium information
+- Liability information
+
+Return only the extracted text content, no commentary or explanations.`,
+        }],
+        max_tokens: 4000,
+        temperature: 0
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`OpenAI API error ${response.status}: ${errorText}`);
+    }
+
+    const result = await response.json();
+    const extractedText = result.choices[0]?.message?.content?.trim() || '';
+    
+    if (extractedText.length < 30) {
+      throw new Error('OCR returned insufficient text');
+    }
+
+    console.log(`OpenAI OCR success: ${extractedText.length} characters extracted`);
+
+    return {
+      pages: [{ page: 1, text: extractedText }],
+      method: 'ocr',
+      stats: {
+        totalPages: 1,
+        textPages: 0,
+        ocrPages: 1,
+        totalChars: extractedText.length
+      }
+    };
+  } catch (error) {
+    console.error('OpenAI OCR failed:', error);
+    throw error;
   }
 }
 
@@ -315,9 +435,12 @@ serve(async (req) => {
     const arrayBuffer = await file.arrayBuffer();
     const pdfBuffer = new Uint8Array(arrayBuffer);
     
-    // Try extraction methods in order of preference
-    let extractionResult: ExtractionResult;
+    // Try extraction methods in order of reliability
+    let extractionResult: ExtractionResult | null = null;
+    const errors: string[] = [];
+    const fileName = body.file_path?.split('/').pop() || 'unknown';
     
+    // 1. Try PDF.js native extraction
     try {
       console.log('Attempting PDF.js extraction...');
       extractionResult = await extractWithPDFJS(pdfBuffer);
@@ -327,34 +450,43 @@ serve(async (req) => {
       const validation = validateExtractedContent(allText);
       
       if (!validation.isValid) {
-        console.log(`PDF.js quality insufficient (${validation.reason}), trying simple fallback...`);
+        console.log(`PDF.js quality insufficient (${validation.reason}), trying binary patterns...`);
         throw new Error('PDF.js extraction quality insufficient');
       }
-    } catch (pdfError) {
-      console.log(`PDF.js failed (${pdfError.message}), trying simple fallback...`);
       
+      console.log(`PDF.js success: ${extractionResult.pages.length} pages, ${extractionResult.stats.totalChars} chars`);
+    } catch (pdfError) {
+      errors.push(`PDF.js: ${pdfError.message}`);
+      console.log(`PDF.js failed: ${pdfError.message}`);
+    }
+    
+    // 2. Try enhanced binary pattern extraction
+    if (!extractionResult || extractionResult.stats.totalChars < 100) {
       try {
-        extractionResult = await extractWithSimpleFallback(pdfBuffer);
-        
-        // Validate fallback extraction
-        const allText = extractionResult.pages.map(p => p.text).join(' ');
-        const validation = validateExtractedContent(allText);
-        
-        if (!validation.isValid) {
-          console.log(`Simple fallback quality insufficient (${validation.reason}), creating minimal extraction...`);
-          throw new Error('Simple fallback extraction quality insufficient');
-        }
-      } catch (fallbackError) {
-        console.log(`Simple fallback failed (${fallbackError.message}), creating minimal extraction...`);
-        
-        // Final fallback - create a minimal extraction
-        const fileName = body.file_path?.split('/').pop() || 'unknown';
-        extractionResult = createMinimalExtraction(fileName);
+        console.log('Attempting enhanced binary pattern extraction...');
+        extractionResult = await extractWithBinaryPatterns(pdfBuffer);
+        console.log(`Binary patterns success: ${extractionResult.stats.totalChars} chars`);
+      } catch (binaryError) {
+        errors.push(`Binary patterns: ${binaryError.message}`);
+        console.log(`Binary patterns failed: ${binaryError.message}`);
+      }
+    }
+    
+    // 3. Try OpenAI OCR as last resort (only for small files)
+    if ((!extractionResult || extractionResult.stats.totalChars < 50) && pdfBuffer.length < 2000000) {
+      try {
+        console.log('Attempting OpenAI OCR...');
+        extractionResult = await extractWithOpenAIOCR(pdfBuffer, fileName);
+        console.log(`OpenAI OCR success: ${extractionResult.stats.totalChars} chars`);
+      } catch (ocrError) {
+        errors.push(`OpenAI OCR: ${ocrError.message}`);
+        console.log(`OpenAI OCR failed: ${ocrError.message}`);
       }
     }
 
-    if (extractionResult.pages.length === 0) {
-      const fileName = body.file_path?.split('/').pop() || 'unknown';
+    // 4. Final fallback - create minimal extraction
+    if (!extractionResult || extractionResult.pages.length === 0) {
+      console.log('All extraction methods failed, creating minimal extraction...');
       extractionResult = createMinimalExtraction(fileName);
     }
 

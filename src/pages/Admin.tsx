@@ -2,6 +2,7 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Building2, FileText, RefreshCw, Zap, FileSearch2, MessageSquare, Database, Settings, Building, RotateCcw, Shield } from 'lucide-react';
 import { AdminGuard } from '@/components/admin/AdminGuard';
+import { DocumentTestProcessor } from '@/components/admin/DocumentTestProcessor';
 import { InsuranceTypesManager } from '@/components/admin/InsuranceTypesManager';
 import { InsuranceCompaniesManager } from '@/components/admin/InsuranceCompaniesManager';
 import { FailedDocumentProcessor } from '@/components/admin/FailedDocumentProcessor';
@@ -82,6 +83,7 @@ export default function Admin() {
           </TabsContent>
           
           <TabsContent value="reprocess" className="space-y-6">
+            <DocumentTestProcessor />
             <FailedDocumentProcessor />
           </TabsContent>
           
