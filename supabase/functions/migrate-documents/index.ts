@@ -104,7 +104,7 @@ serve(async (req) => {
     }
 
     if (action === 'migrate') {
-      console.log(`Starting migration of ${batch_size} documents...`);
+      console.log(`Starting migration of ${batch_size} documents with new extract-pdf pipeline...`);
       
       // Get unprocessed documents directly using SQL to avoid the filtering issue
       const { data: legacyDocs, error: queryError } = await supabase
@@ -124,13 +124,10 @@ serve(async (req) => {
 
       if (queryError) {
         console.error(`Query error details:`, queryError);
-        // Log the actual SQL query that failed
-        console.error(`Failed query was looking for unprocessed documents with batch_size: ${batch_size}`);
         throw new Error(`Error querying legacy documents: ${queryError.message}`);
       }
 
       console.log(`Found ${legacyDocs?.length || 0} unprocessed documents to migrate`);
-
 
       if (!legacyDocs || legacyDocs.length === 0) {
         // Double-check by getting total counts for debugging
@@ -155,7 +152,7 @@ serve(async (req) => {
         });
       }
 
-      console.log(`Processing ${legacyDocs.length} documents...`);
+      console.log(`Processing ${legacyDocs.length} documents with new pipeline...`);
 
       const results = [];
       const errors = [];
@@ -321,29 +318,29 @@ serve(async (req) => {
 
           console.log(`Created documents_v2 entry: ${newDoc.id}`);
 
-          // Call extract-pdf to process the new document
-          if (doc.extracted_text && doc.extracted_text.length > 100) {
-            console.log(`Processing existing extracted text for ${doc.title}...`);
-            
-            const { error: extractError } = await supabase.functions.invoke('extract-pdf', {
-              body: {
-                document_id: newDoc.id
-              }
-            });
-
-            if (extractError) {
-              console.error(`Error processing PDF: ${extractError.message}`);
-              // Continue with migration even if processing fails
+          // Process the document with the new extract-pdf pipeline
+          console.log(`Processing document ${doc.title} with new extract-pdf pipeline...`);
+          
+          const { data: extractResult, error: extractError } = await supabase.functions.invoke('extract-pdf', {
+            body: {
+              document_id: newDoc.id
             }
+          });
+
+          if (extractError) {
+            console.error(`Error processing PDF with new pipeline: ${extractError.message}`);
+            // Continue with migration even if processing fails
           } else {
-            console.log(`No extracted text available for ${doc.title}, skipping processing`);
+            console.log(`Successfully processed document with new pipeline:`, extractResult);
           }
 
           results.push({
             legacy_id: doc.id,
             new_id: newDoc.id,
             title: doc.title,
-            status: 'success'
+            status: 'success',
+            pipeline: 'extract-pdf',
+            processed: !extractError
           });
 
           console.log(`Successfully migrated: ${doc.title}`);
@@ -362,7 +359,8 @@ serve(async (req) => {
         success: true,
         processed: results.length,
         errors: errors,
-        results: results
+        results: results,
+        pipeline: 'extract-pdf'
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

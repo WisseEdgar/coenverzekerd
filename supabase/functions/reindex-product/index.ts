@@ -107,9 +107,11 @@ serve(async (req) => {
       console.log(`Cleaned up document ${document.id}`);
     }
 
-    // Trigger reprocessing for each document by calling extract-pdf
+    // Trigger reprocessing for each document using the new extract-pdf function
     const reprocessingPromises = documents.map(async (document) => {
       try {
+        console.log(`Reprocessing document ${document.id} with extract-pdf...`);
+        
         const { data: extractResult, error: extractError } = await supabase.functions.invoke('extract-pdf', {
           body: {
             document_id: document.id
@@ -120,7 +122,7 @@ serve(async (req) => {
           throw new Error(`Extract error: ${extractError.message}`);
         }
 
-        console.log(`Reprocessed document ${document.id}:`, extractResult);
+        console.log(`Successfully reprocessed document ${document.id}:`, extractResult);
         return { document_id: document.id, success: true, result: extractResult };
       } catch (error) {
         console.error(`Failed to reprocess document ${document.id}:`, error);
@@ -133,7 +135,7 @@ serve(async (req) => {
 
     // Log the reindexing action
     await supabase.rpc('log_admin_action', {
-      _action: `Product reindexing completed: ${successCount}/${documents.length} documents reprocessed`,
+      _action: `Product reindexing completed with new pipeline: ${successCount}/${documents.length} documents reprocessed`,
       _table_name: 'products',
       _record_id: product_id
     });
@@ -146,7 +148,8 @@ serve(async (req) => {
       total_documents: documents.length,
       successful_reprocessing: successCount,
       failed_reprocessing: documents.length - successCount,
-      results: reprocessingResults
+      results: reprocessingResults,
+      pipeline: 'extract-pdf'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

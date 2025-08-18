@@ -12,17 +12,38 @@ enabled = true
 port = 54324
 external_url = "http://localhost:54324"
 
-[functions.coen-chat]
+[functions.extract-pdf]
+verify_jwt = true
+
+[functions.categorize-document]
 verify_jwt = true
 
 [functions.process-document]
 verify_jwt = true
 
-[functions.extract-pdf]
-verify_jwt = true
-
 [functions.chat-answer]
 verify_jwt = true
 
+[functions.query-index]
+verify_jwt = true
+
+[functions.reindex-product]
+verify_jwt = true
+
+[functions.reprocess-failed-documents]
+verify_jwt = true
+
 [functions.migrate-documents]
+verify_jwt = true
+
+[functions.delete-document]
+verify_jwt = true
+
+[functions.coen-chat]
+verify_jwt = true
+
+[functions.batch-process-embeddings]
+verify_jwt = true
+
+[functions.reprocess-documents]
 verify_jwt = true

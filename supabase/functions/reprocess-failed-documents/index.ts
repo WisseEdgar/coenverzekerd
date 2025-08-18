@@ -167,7 +167,7 @@ serve(async (req) => {
       
       for (const documentId of document_ids) {
         try {
-          console.log(`Reprocessing document: ${documentId}`);
+          console.log(`Reprocessing document with new pipeline: ${documentId}`);
           
           // Get document info
           const { data: doc, error: docError } = await supabase
@@ -215,7 +215,7 @@ serve(async (req) => {
             .update({ processing_status: 'pending' })
             .eq('id', documentId);
 
-          // Call extract-pdf function to reprocess
+          // Call extract-pdf function to reprocess with new pipeline
           const { data: extractResult, error: extractError } = await supabase.functions.invoke('extract-pdf', {
             body: {
               document_id: documentId
@@ -234,7 +234,8 @@ serve(async (req) => {
               document_id: documentId,
               title: doc.title,
               success: true,
-              result: extractResult
+              result: extractResult,
+              pipeline: 'extract-pdf'
             });
           }
 
@@ -253,7 +254,8 @@ serve(async (req) => {
         results,
         processed: results.length,
         successful: results.filter(r => r.success).length,
-        failed: results.filter(r => !r.success).length
+        failed: results.filter(r => !r.success).length,
+        pipeline: 'extract-pdf'
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
