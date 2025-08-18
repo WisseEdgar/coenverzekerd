@@ -53,37 +53,115 @@ serve(async (req) => {
     // Clean and normalize text
     const cleanText = text.trim().replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n');
 
-    // Generate embedding for the full document
-    const documentEmbedding = await generateEmbeddings([cleanText], openaiApiKey);
-    console.log(`Generated document embedding`);
+    let document: any;
 
-    // Create document record first
-    const { data: document, error: docError } = await supabase
-      .from('documents')
-      .insert({
-        title: title.trim(),
-        filename: `manual-${Date.now()}.txt`,
-        file_path: `manual-uploads/${Date.now()}.txt`,
-        mime_type: 'text/plain',
-        extracted_text: cleanText,
-        summary: generateSummary(cleanText),
-        embedding: documentEmbedding[0],
-        uploaded_by: user.id,
-        insurance_type_id: null,
-        insurance_company_id: null,
-        file_size: cleanText.length,
-      })
-      .select()
-      .single();
+    // For large documents, use chunking approach
+    if (cleanText.length > 6000) {
+      console.log(`Document is large (${cleanText.length} chars), using chunking approach`);
+      
+      // Create document record first (without embedding)
+      const { data: doc, error: docError } = await supabase
+        .from('documents')
+        .insert({
+          title: title.trim(),
+          filename: `manual-${Date.now()}.txt`,
+          file_path: `manual-uploads/${Date.now()}.txt`,
+          mime_type: 'text/plain',
+          extracted_text: cleanText,
+          summary: generateSummary(cleanText),
+          uploaded_by: user.id,
+          insurance_type_id: null,
+          insurance_company_id: null,
+          file_size: cleanText.length,
+        })
+        .select()
+        .single();
 
-    if (docError) {
-      console.error('Document creation error:', docError);
-      throw new Error(`Failed to create document: ${docError.message}`);
+      if (docError) {
+        console.error('Document creation error:', docError);
+        throw new Error(`Failed to create document: ${docError.message}`);
+      }
+
+      document = doc;
+      console.log(`Created document: ${document.id}`);
+
+      // Create chunks
+      const chunks = createIntelligentChunks(cleanText, 6000);
+      console.log(`Created ${chunks.length} chunks`);
+
+      // Generate embeddings for chunks in batches
+      const embeddings = await generateEmbeddings(chunks, openaiApiKey);
+      console.log(`Generated ${embeddings.length} embeddings`);
+
+      // Insert chunks
+      const chunksToInsert = chunks.map((chunk, index) => ({
+        document_id: document.id,
+        text: chunk,
+        page: 1,
+        token_count: Math.ceil(chunk.length / 4),
+        metadata: { chunk_index: index }
+      }));
+
+      const { data: insertedChunks, error: chunkError } = await supabase
+        .from('chunks')
+        .insert(chunksToInsert)
+        .select();
+
+      if (chunkError) {
+        console.error('Chunk insertion error:', chunkError);
+        throw new Error(`Failed to create chunks: ${chunkError.message}`);
+      }
+
+      // Insert embeddings
+      const embeddingsToInsert = insertedChunks!.map((chunk, index) => ({
+        chunk_id: chunk.id,
+        embedding: embeddings[index]
+      }));
+
+      const { error: embeddingError } = await supabase
+        .from('chunk_embeddings')
+        .insert(embeddingsToInsert);
+
+      if (embeddingError) {
+        console.error('Embedding insertion error:', embeddingError);
+        throw new Error(`Failed to create embeddings: ${embeddingError.message}`);
+      }
+
+      console.log(`Successfully processed large document: ${chunks.length} chunks`);
+    } else {
+      console.log(`Document is small (${cleanText.length} chars), using single embedding approach`);
+      
+      // Generate embedding for the full document
+      const documentEmbedding = await generateEmbeddings([cleanText], openaiApiKey);
+      console.log(`Generated document embedding`);
+
+      // Create document record with embedding
+      const { data: doc, error: docError } = await supabase
+        .from('documents')
+        .insert({
+          title: title.trim(),
+          filename: `manual-${Date.now()}.txt`,
+          file_path: `manual-uploads/${Date.now()}.txt`,
+          mime_type: 'text/plain',
+          extracted_text: cleanText,
+          summary: generateSummary(cleanText),
+          embedding: documentEmbedding[0],
+          uploaded_by: user.id,
+          insurance_type_id: null,
+          insurance_company_id: null,
+          file_size: cleanText.length,
+        })
+        .select()
+        .single();
+
+      if (docError) {
+        console.error('Document creation error:', docError);
+        throw new Error(`Failed to create document: ${docError.message}`);
+      }
+
+      document = doc;
+      console.log(`Created document: ${document.id}`);
     }
-
-    console.log(`Created document: ${document.id}`);
-
-    console.log(`Successfully processed manual text: ${cleanText.length} characters`);
 
     return new Response(JSON.stringify({
       success: true,
