@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DocumentUpload } from '@/components/documents/DocumentUpload';
 import { ManualDocumentUpload } from '@/components/documents/ManualDocumentUpload';
+import { ManualTextInput } from '@/components/documents/ManualTextInput';
 import { DocumentsList } from '@/components/documents/DocumentsList';
 import { AdminGuard } from '@/components/admin/AdminGuard';
-import { Upload, FileText, UserPlus } from 'lucide-react';
+import { Upload, FileText, UserPlus, Type } from 'lucide-react';
 
 export default function Documents() {
   return (
@@ -18,7 +19,7 @@ export default function Documents() {
         </div>
 
         <Tabs defaultValue="upload" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="upload" className="flex items-center gap-2">
               <Upload className="h-4 w-4" />
               Auto Upload
@@ -26,6 +27,10 @@ export default function Documents() {
             <TabsTrigger value="manual" className="flex items-center gap-2">
               <UserPlus className="h-4 w-4" />
               Handmatig
+            </TabsTrigger>
+            <TabsTrigger value="text" className="flex items-center gap-2">
+              <Type className="h-4 w-4" />
+              Tekst Input
             </TabsTrigger>
             <TabsTrigger value="library" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
@@ -39,6 +44,10 @@ export default function Documents() {
           
           <TabsContent value="manual" className="space-y-6">
             <ManualDocumentUpload />
+          </TabsContent>
+          
+          <TabsContent value="text" className="space-y-6">
+            <ManualTextInput />
           </TabsContent>
           
           <TabsContent value="library" className="space-y-6">
