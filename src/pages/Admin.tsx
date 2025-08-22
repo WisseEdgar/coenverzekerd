@@ -15,6 +15,10 @@ import { DatabaseSchemaViewer } from '@/components/admin/DatabaseSchemaViewer';
 import { TableStatistics } from '@/components/admin/TableStatistics';
 import { AdvancedDocumentManager } from '@/components/admin/AdvancedDocumentManager';
 import { DatabaseCleanupManager } from '@/components/admin/DatabaseCleanupManager';
+import { DataIntegrityChecker } from '@/components/admin/DataIntegrityChecker';
+import { BulkDataEditor } from '@/components/admin/BulkDataEditor';
+import { DocumentOrphanManager } from '@/components/admin/DocumentOrphanManager';
+import { DatabasePerformanceMonitor } from '@/components/admin/DatabasePerformanceMonitor';
 
 export default function Admin() {
   return (
@@ -92,6 +96,26 @@ export default function Admin() {
               <span className="hidden sm:inline">Document Migratie</span>
               <span className="sm:hidden">Migratie</span>
             </TabsTrigger>
+            <TabsTrigger value="integrity" className="flex items-center gap-2 text-xs px-3 py-2">
+              <Shield className="h-4 w-4" />
+              <span className="hidden sm:inline">Data Integriteit</span>
+              <span className="sm:hidden">Integriteit</span>
+            </TabsTrigger>
+            <TabsTrigger value="bulk-editor" className="flex items-center gap-2 text-xs px-3 py-2">
+              <Database className="h-4 w-4" />
+              <span className="hidden sm:inline">Bulk Editor</span>
+              <span className="sm:hidden">Bulk</span>
+            </TabsTrigger>
+            <TabsTrigger value="orphans" className="flex items-center gap-2 text-xs px-3 py-2">
+              <FileSearch2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Orphan Manager</span>
+              <span className="sm:hidden">Orphans</span>
+            </TabsTrigger>
+            <TabsTrigger value="performance" className="flex items-center gap-2 text-xs px-3 py-2">
+              <BarChart className="h-4 w-4" />
+              <span className="hidden sm:inline">Performance</span>
+              <span className="sm:hidden">Perf</span>
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="schema" className="space-y-6">
@@ -141,6 +165,22 @@ export default function Admin() {
           
           <TabsContent value="migration" className="space-y-6">
             <DocumentMigrationManager />
+          </TabsContent>
+          
+          <TabsContent value="integrity" className="space-y-6">
+            <DataIntegrityChecker />
+          </TabsContent>
+          
+          <TabsContent value="bulk-editor" className="space-y-6">
+            <BulkDataEditor />
+          </TabsContent>
+          
+          <TabsContent value="orphans" className="space-y-6">
+            <DocumentOrphanManager />
+          </TabsContent>
+          
+          <TabsContent value="performance" className="space-y-6">
+            <DatabasePerformanceMonitor />
           </TabsContent>
         </Tabs>
       </div>
