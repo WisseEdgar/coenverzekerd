@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building2, FileText, RefreshCw, Zap, FileSearch2, MessageSquare, Database, Settings, Building, RotateCcw, Shield } from 'lucide-react';
+import { Building2, FileText, RefreshCw, Zap, FileSearch2, MessageSquare, Database, Settings, Building, RotateCcw, Shield, BarChart, Eye, Trash2 } from 'lucide-react';
 import { AdminGuard } from '@/components/admin/AdminGuard';
 import { DocumentTestProcessor } from '@/components/admin/DocumentTestProcessor';
 import { InsuranceTypesManager } from '@/components/admin/InsuranceTypesManager';
@@ -11,6 +11,10 @@ import { BatchProcessEmbeddings } from '@/components/admin/BatchProcessEmbedding
 import { AuditLogViewer } from '@/components/admin/AuditLogViewer';
 import { MessageFeedbackViewer } from '@/components/admin/MessageFeedbackViewer';
 import DocumentMigrationManager from '@/components/admin/DocumentMigrationManager';
+import { DatabaseSchemaViewer } from '@/components/admin/DatabaseSchemaViewer';
+import { TableStatistics } from '@/components/admin/TableStatistics';
+import { AdvancedDocumentManager } from '@/components/admin/AdvancedDocumentManager';
+import { DatabaseCleanupManager } from '@/components/admin/DatabaseCleanupManager';
 
 export default function Admin() {
   return (
@@ -26,8 +30,28 @@ export default function Admin() {
           </p>
         </div>
 
-        <Tabs defaultValue="types" className="w-full">
+        <Tabs defaultValue="schema" className="w-full">
           <TabsList className="flex flex-wrap w-full gap-1 h-auto p-1">
+            <TabsTrigger value="schema" className="flex items-center gap-2 text-xs px-3 py-2">
+              <Eye className="h-4 w-4" />
+              <span className="hidden sm:inline">Database Schema</span>
+              <span className="sm:hidden">Schema</span>
+            </TabsTrigger>
+            <TabsTrigger value="statistics" className="flex items-center gap-2 text-xs px-3 py-2">
+              <BarChart className="h-4 w-4" />
+              <span className="hidden sm:inline">Tabel Statistieken</span>
+              <span className="sm:hidden">Stats</span>
+            </TabsTrigger>
+            <TabsTrigger value="documents-advanced" className="flex items-center gap-2 text-xs px-3 py-2">
+              <FileSearch2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Document Beheer</span>
+              <span className="sm:hidden">Docs</span>
+            </TabsTrigger>
+            <TabsTrigger value="cleanup" className="flex items-center gap-2 text-xs px-3 py-2">
+              <Trash2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Database Opschoning</span>
+              <span className="sm:hidden">Cleanup</span>
+            </TabsTrigger>
             <TabsTrigger value="types" className="flex items-center gap-2 text-xs px-3 py-2">
               <FileText className="h-4 w-4" />
               <span className="hidden sm:inline">Verzekeringtypes</span>
@@ -70,6 +94,22 @@ export default function Admin() {
             </TabsTrigger>
           </TabsList>
           
+          <TabsContent value="schema" className="space-y-6">
+            <DatabaseSchemaViewer />
+          </TabsContent>
+
+          <TabsContent value="statistics" className="space-y-6">
+            <TableStatistics />
+          </TabsContent>
+
+          <TabsContent value="documents-advanced" className="space-y-6">
+            <AdvancedDocumentManager />
+          </TabsContent>
+
+          <TabsContent value="cleanup" className="space-y-6">
+            <DatabaseCleanupManager />
+          </TabsContent>
+
           <TabsContent value="types" className="space-y-6">
             <InsuranceTypesManager />
           </TabsContent>
