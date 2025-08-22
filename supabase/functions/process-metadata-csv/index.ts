@@ -206,7 +206,7 @@ function validateRow(row: any, rowNumber: number): ValidationError[] {
     });
   }
 
-  if (row.source_url && row.source_url.trim() && !isValidUrl(row.source_url.trim())) {
+  if (row.source_url && row.source_url.trim() && row.source_url.trim().startsWith('http') && !isValidUrl(row.source_url.trim())) {
     errors.push({
       row: rowNumber,
       field: 'source_url',
