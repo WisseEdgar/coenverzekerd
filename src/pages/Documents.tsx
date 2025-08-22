@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DocumentUpload } from '@/components/documents/DocumentUpload';
 import { ManualDocumentUpload } from '@/components/documents/ManualDocumentUpload';
-import { ManualTextInput } from '@/components/documents/ManualTextInput';
+import { BulkTextUpload } from '@/components/documents/BulkTextUpload';
 import { BulkWordUpload } from '@/components/documents/BulkWordUpload';
 import { DocumentsList } from '@/components/documents/DocumentsList';
 import { AdminGuard } from '@/components/admin/AdminGuard';
@@ -30,8 +30,8 @@ export default function Documents() {
               Handmatig
             </TabsTrigger>
             <TabsTrigger value="text" className="flex items-center gap-2">
-              <Type className="h-4 w-4" />
-              Tekst Input
+              <FileText className="h-4 w-4" />
+              Bulk Tekst
             </TabsTrigger>
             <TabsTrigger value="word" className="flex items-center gap-2">
               <FileType2 className="h-4 w-4" />
@@ -52,7 +52,7 @@ export default function Documents() {
           </TabsContent>
           
           <TabsContent value="text" className="space-y-6">
-            <ManualTextInput />
+            <BulkTextUpload />
           </TabsContent>
           
           <TabsContent value="word" className="space-y-6">
