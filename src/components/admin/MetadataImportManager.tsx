@@ -27,6 +27,20 @@ interface CSVRow {
   notes?: string;
 }
 
+// Column mapping from Dutch CSV headers to database field names
+const CSV_COLUMN_MAPPING: Record<string, string> = {
+  'Statutaire Naam': 'stationaire_naam',
+  'Handelsnaam': 'handelsnaam',
+  'Verzekeringscategorie': 'verzekeringscategorie',
+  'Type verzekering': 'product_naam',
+  'Link Polisvoorwaarden': 'source_url',
+  'Link algemene voorwaarden': 'source_url',
+  'Link algemene voorwaarden overzicht': 'source_url',
+  'Opmerkingen': 'notes',
+  'Document-code': 'document_code',
+  'Status': 'status'
+};
+
 interface ValidationError {
   row: number;
   field: string;
@@ -100,13 +114,48 @@ export function MetadataImportManager() {
 
         for (let i = 1; i < lines.length; i++) {
           const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
-          const row: any = {};
+          const originalRow: any = {};
           
           headers.forEach((header, index) => {
-            row[header] = values[index] || '';
+            originalRow[header] = values[index] || '';
           });
           
-          rows.push(row);
+          // Transform the row using column mapping
+          const transformedRow: any = {};
+          
+          // Map known columns
+          Object.entries(CSV_COLUMN_MAPPING).forEach(([csvHeader, dbField]) => {
+            if (originalRow[csvHeader] !== undefined) {
+              transformedRow[dbField] = originalRow[csvHeader];
+            }
+          });
+          
+          // Set verzekeringsmaatschappij from stationaire_naam if not set
+          if (!transformedRow.verzekeringsmaatschappij && transformedRow.stationaire_naam) {
+            transformedRow.verzekeringsmaatschappij = transformedRow.stationaire_naam;
+          }
+          
+          // Derive document_type from document_code or product_naam
+          if (!transformedRow.document_type && transformedRow.document_code) {
+            const codeparts = transformedRow.document_code.split('-');
+            if (codeparts.length >= 4) {
+              transformedRow.document_type = codeparts[3]; // e.g., "RBV" from "ACH-CEN-ANSPR-RBV-001"
+            }
+          }
+          if (!transformedRow.document_type && transformedRow.product_naam) {
+            // Fallback: use a simplified version of product name
+            transformedRow.document_type = transformedRow.product_naam.substring(0, 10);
+          }
+          
+          // Set default values for missing required fields
+          if (!transformedRow.document_type) {
+            transformedRow.document_type = 'Algemeen';
+          }
+          if (!transformedRow.verzekeringsmaatschappij) {
+            transformedRow.verzekeringsmaatschappij = 'Onbekend';
+          }
+          
+          rows.push(transformedRow);
         }
 
         setCsvData(rows);
