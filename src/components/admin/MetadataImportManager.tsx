@@ -61,6 +61,7 @@ interface ImportResult {
 export function MetadataImportManager() {
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvData, setCsvData] = useState<CSVRow[]>([]);
+  const [transformedData, setTransformedData] = useState<CSVRow[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [progress, setProgress] = useState(0);
@@ -120,45 +121,16 @@ export function MetadataImportManager() {
             originalRow[header] = values[index] || '';
           });
           
-          // Transform the row using column mapping
-          const transformedRow: any = {};
-          
-          // Map known columns
-          Object.entries(CSV_COLUMN_MAPPING).forEach(([csvHeader, dbField]) => {
-            if (originalRow[csvHeader] !== undefined) {
-              transformedRow[dbField] = originalRow[csvHeader];
-            }
-          });
-          
-          // Set verzekeringsmaatschappij from stationaire_naam if not set
-          if (!transformedRow.verzekeringsmaatschappij && transformedRow.stationaire_naam) {
-            transformedRow.verzekeringsmaatschappij = transformedRow.stationaire_naam;
-          }
-          
-          // Derive document_type from document_code or product_naam
-          if (!transformedRow.document_type && transformedRow.document_code) {
-            const codeparts = transformedRow.document_code.split('-');
-            if (codeparts.length >= 4) {
-              transformedRow.document_type = codeparts[3]; // e.g., "RBV" from "ACH-CEN-ANSPR-RBV-001"
-            }
-          }
-          if (!transformedRow.document_type && transformedRow.product_naam) {
-            // Fallback: use a simplified version of product name
-            transformedRow.document_type = transformedRow.product_naam.substring(0, 10);
-          }
-          
-          // Set default values for missing required fields
-          if (!transformedRow.document_type) {
-            transformedRow.document_type = 'Algemeen';
-          }
-          if (!transformedRow.verzekeringsmaatschappij) {
-            transformedRow.verzekeringsmaatschappij = 'Onbekend';
-          }
-          
-          rows.push(transformedRow);
+          // Keep original data for preview
+          rows.push(originalRow);
         }
 
         setCsvData(rows);
+        
+        // Transform data for backend
+        const transformedRows = transformDataForBackend(rows);
+        setTransformedData(transformedRows);
+        
         toast({
           title: "CSV geparsed",
           description: `${rows.length} rijen gevonden`
@@ -175,7 +147,7 @@ export function MetadataImportManager() {
   }, [toast]);
 
   const handleImport = useCallback(async () => {
-    if (!csvData.length) {
+    if (!transformedData.length) {
       toast({
         title: "Geen data",
         description: "Upload eerst een CSV bestand",
@@ -195,7 +167,7 @@ export function MetadataImportManager() {
       }, 200);
 
       const { data, error } = await supabase.functions.invoke('process-metadata-csv', {
-        body: { csvData }
+        body: { csvData: transformedData }
       });
 
       clearInterval(progressInterval);
@@ -231,7 +203,7 @@ export function MetadataImportManager() {
     } finally {
       setIsProcessing(false);
     }
-  }, [csvData, toast, refetchHistory]);
+  }, [transformedData, toast, refetchHistory]);
 
   const downloadTemplate = useCallback(() => {
     const template = `document_code,stationaire_naam,handelsnaam,verzekeringsmaatschappij,verzekeringscategorie,product_naam,document_type,versie_datum,source_url,download_priority,notes
@@ -247,6 +219,47 @@ export function MetadataImportManager() {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   }, []);
+
+  // Transform data from original CSV format to backend format
+  const transformDataForBackend = (originalData: any[]): CSVRow[] => {
+    return originalData.map((originalRow) => {
+      const transformedRow: any = {};
+      
+      // Map known columns
+      Object.entries(CSV_COLUMN_MAPPING).forEach(([csvHeader, dbField]) => {
+        if (originalRow[csvHeader] !== undefined) {
+          transformedRow[dbField] = originalRow[csvHeader];
+        }
+      });
+      
+      // Set verzekeringsmaatschappij from stationaire_naam if not set
+      if (!transformedRow.verzekeringsmaatschappij && transformedRow.stationaire_naam) {
+        transformedRow.verzekeringsmaatschappij = transformedRow.stationaire_naam;
+      }
+      
+      // Derive document_type from document_code or product_naam
+      if (!transformedRow.document_type && transformedRow.document_code) {
+        const codeparts = transformedRow.document_code.split('-');
+        if (codeparts.length >= 4) {
+          transformedRow.document_type = codeparts[3]; // e.g., "RBV" from "ACH-CEN-ANSPR-RBV-001"
+        }
+      }
+      if (!transformedRow.document_type && transformedRow.product_naam) {
+        // Fallback: use a simplified version of product name
+        transformedRow.document_type = transformedRow.product_naam.substring(0, 10);
+      }
+      
+      // Set default values for missing required fields
+      if (!transformedRow.document_type) {
+        transformedRow.document_type = 'Algemeen';
+      }
+      if (!transformedRow.verzekeringsmaatschappij) {
+        transformedRow.verzekeringsmaatschappij = 'Onbekend';
+      }
+      
+      return transformedRow;
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -311,7 +324,7 @@ export function MetadataImportManager() {
 
               <Button
                 onClick={handleImport}
-                disabled={!csvData.length || isProcessing}
+                disabled={!transformedData.length || isProcessing}
                 className="w-full"
               >
                 {isProcessing ? 'Importeren...' : 'Start Import'}
