@@ -182,19 +182,19 @@ function validateRow(row: any, rowNumber: number): ValidationError[] {
   }
 
   // Format validations
-  if (row.document_code && !/^[0-9]{3}-[A-Z]{2,3}-[0-9]{2}-[A-Z0-9-]+$/.test(row.document_code.trim())) {
+  if (row.document_code && !/^[A-Z]{2,4}-[A-Z]{2,4}-[A-Z]{2,6}-[A-Z]{2,4}-[0-9]{3}$/.test(row.document_code.trim())) {
     errors.push({
       row: rowNumber,
       field: 'document_code',
-      message: 'Document code format invalid (expected: XXX-TYPE-NN-PRODUCT)'
+      message: 'Document code format invalid (expected: COMPANY-BRAND-CATEGORY-TYPE-NUMBER)'
     });
   }
 
-  if (row.document_type && !['PV', 'BV', 'RV', 'AV', 'IV'].includes(row.document_type.trim().toUpperCase())) {
+  if (row.document_type && !['PV', 'BV', 'RV', 'AV', 'IV', 'RBV'].includes(row.document_type.trim().toUpperCase())) {
     errors.push({
       row: rowNumber,
       field: 'document_type',
-      message: 'Document type must be one of: PV, BV, RV, AV, IV'
+      message: 'Document type must be one of: PV, BV, RV, AV, IV, RBV'
     });
   }
 
@@ -206,7 +206,7 @@ function validateRow(row: any, rowNumber: number): ValidationError[] {
     });
   }
 
-  if (row.source_url && !isValidUrl(row.source_url.trim())) {
+  if (row.source_url && row.source_url.trim() && !isValidUrl(row.source_url.trim())) {
     errors.push({
       row: rowNumber,
       field: 'source_url',
