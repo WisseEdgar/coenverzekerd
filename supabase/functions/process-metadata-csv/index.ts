@@ -40,8 +40,11 @@ serve(async (req) => {
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { 
+        auth: { persistSession: false },
+        global: { headers: { Authorization: authHeader } } 
+      }
     );
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -49,7 +52,14 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { csvData } = await req.json();
+    const body = await req.json();
+    console.log('Received request body:', JSON.stringify(body, null, 2));
+    
+    if (!body.csvData) {
+      throw new Error('Missing csvData in request body');
+    }
+    
+    const { csvData } = body;
     
     console.log(`Processing CSV with ${csvData.length} rows for user ${user.id}`);
 
