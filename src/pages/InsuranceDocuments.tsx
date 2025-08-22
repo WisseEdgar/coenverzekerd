@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AdminGuard } from '@/components/admin/AdminGuard';
-import { Upload, FileText, Settings, Building2 } from 'lucide-react';
+import { Upload, FileText, Settings, Building2, Database } from 'lucide-react';
 import { InsuranceDocumentUpload } from '@/components/insurance/InsuranceDocumentUpload';
 import { InsuranceDocumentsList } from '@/components/insurance/InsuranceDocumentsList';
 import { InsuranceTaxonomy } from '@/components/insurance/InsuranceTaxonomy';
 import { InsuranceProducts } from '@/components/insurance/InsuranceProducts';
+import { MetadataImportManager } from '@/components/admin/MetadataImportManager';
 
 export default function InsuranceDocuments() {
   return (
@@ -19,7 +20,7 @@ export default function InsuranceDocuments() {
         </div>
 
         <Tabs defaultValue="upload" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="upload" className="flex items-center gap-2">
               <Upload className="h-4 w-4" />
               Upload
@@ -31,6 +32,10 @@ export default function InsuranceDocuments() {
             <TabsTrigger value="products" className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
               Producten
+            </TabsTrigger>
+            <TabsTrigger value="metadata" className="flex items-center gap-2">
+              <Database className="h-4 w-4" />
+              Metadata
             </TabsTrigger>
             <TabsTrigger value="taxonomy" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
@@ -48,6 +53,10 @@ export default function InsuranceDocuments() {
           
           <TabsContent value="products" className="space-y-6">
             <InsuranceProducts />
+          </TabsContent>
+          
+          <TabsContent value="metadata" className="space-y-6">
+            <MetadataImportManager />
           </TabsContent>
           
           <TabsContent value="taxonomy" className="space-y-6">

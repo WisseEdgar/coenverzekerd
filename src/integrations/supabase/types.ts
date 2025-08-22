@@ -183,8 +183,11 @@ export type Database = {
       }
       chunks: {
         Row: {
+          base_insurance_code: string | null
           created_at: string
+          document_code: string | null
           document_id: string
+          document_type: string | null
           id: string
           metadata: Json | null
           page: number | null
@@ -193,8 +196,11 @@ export type Database = {
           token_count: number | null
         }
         Insert: {
+          base_insurance_code?: string | null
           created_at?: string
+          document_code?: string | null
           document_id: string
+          document_type?: string | null
           id?: string
           metadata?: Json | null
           page?: number | null
@@ -203,8 +209,11 @@ export type Database = {
           token_count?: number | null
         }
         Update: {
+          base_insurance_code?: string | null
           created_at?: string
+          document_code?: string | null
           document_id?: string
+          document_type?: string | null
           id?: string
           metadata?: Json | null
           page?: number | null
@@ -358,6 +367,87 @@ export type Database = {
         }
         Relationships: []
       }
+      document_codes: {
+        Row: {
+          base_insurance_code: string
+          code: string
+          created_at: string
+          document_type: string
+          id: string
+          variant_code: string | null
+        }
+        Insert: {
+          base_insurance_code: string
+          code: string
+          created_at?: string
+          document_type: string
+          id?: string
+          variant_code?: string | null
+        }
+        Update: {
+          base_insurance_code?: string
+          code?: string
+          created_at?: string
+          document_type?: string
+          id?: string
+          variant_code?: string | null
+        }
+        Relationships: []
+      }
+      document_metadata_import: {
+        Row: {
+          created_at: string
+          document_code: string
+          document_type: string | null
+          download_priority: number | null
+          handelsnaam: string | null
+          id: string
+          import_batch_id: string | null
+          notes: string | null
+          product_naam: string | null
+          source_url: string | null
+          stationaire_naam: string | null
+          status: string | null
+          versie_datum: string | null
+          verzekeringscategorie: string | null
+          verzekeringsmaatschappij: string | null
+        }
+        Insert: {
+          created_at?: string
+          document_code: string
+          document_type?: string | null
+          download_priority?: number | null
+          handelsnaam?: string | null
+          id?: string
+          import_batch_id?: string | null
+          notes?: string | null
+          product_naam?: string | null
+          source_url?: string | null
+          stationaire_naam?: string | null
+          status?: string | null
+          versie_datum?: string | null
+          verzekeringscategorie?: string | null
+          verzekeringsmaatschappij?: string | null
+        }
+        Update: {
+          created_at?: string
+          document_code?: string
+          document_type?: string | null
+          download_priority?: number | null
+          handelsnaam?: string | null
+          id?: string
+          import_batch_id?: string | null
+          notes?: string | null
+          product_naam?: string | null
+          source_url?: string | null
+          stationaire_naam?: string | null
+          status?: string | null
+          versie_datum?: string | null
+          verzekeringscategorie?: string | null
+          verzekeringsmaatschappij?: string | null
+        }
+        Relationships: []
+      }
       document_processing_logs: {
         Row: {
           created_at: string
@@ -395,6 +485,45 @@ export type Database = {
             columns: ["document_id"]
             isOneToOne: false
             referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_relationships: {
+        Row: {
+          child_document_id: string | null
+          created_at: string
+          id: string
+          parent_document_id: string | null
+          relationship_type: string | null
+        }
+        Insert: {
+          child_document_id?: string | null
+          created_at?: string
+          id?: string
+          parent_document_id?: string | null
+          relationship_type?: string | null
+        }
+        Update: {
+          child_document_id?: string | null
+          created_at?: string
+          id?: string
+          parent_document_id?: string | null
+          relationship_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_relationships_child_document_id_fkey"
+            columns: ["child_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents_v2"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_relationships_parent_document_id_fkey"
+            columns: ["parent_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents_v2"
             referencedColumns: ["id"]
           },
         ]
@@ -467,50 +596,74 @@ export type Database = {
       }
       documents_v2: {
         Row: {
+          base_insurance_code: string | null
           created_at: string
+          document_code: string | null
+          document_type: string | null
+          download_priority: number | null
           file_path: string
           file_sha256: string | null
           file_size: number | null
           filename: string
           id: string
+          is_primary_document: boolean | null
           pages: number | null
           processing_status: string | null
           product_id: string
           source_type: string | null
+          source_url: string | null
+          subcategory: string | null
           title: string
           updated_at: string
+          variant_code: string | null
           version_date: string | null
           version_label: string | null
         }
         Insert: {
+          base_insurance_code?: string | null
           created_at?: string
+          document_code?: string | null
+          document_type?: string | null
+          download_priority?: number | null
           file_path: string
           file_sha256?: string | null
           file_size?: number | null
           filename: string
           id?: string
+          is_primary_document?: boolean | null
           pages?: number | null
           processing_status?: string | null
           product_id: string
           source_type?: string | null
+          source_url?: string | null
+          subcategory?: string | null
           title: string
           updated_at?: string
+          variant_code?: string | null
           version_date?: string | null
           version_label?: string | null
         }
         Update: {
+          base_insurance_code?: string | null
           created_at?: string
+          document_code?: string | null
+          document_type?: string | null
+          download_priority?: number | null
           file_path?: string
           file_sha256?: string | null
           file_size?: number | null
           filename?: string
           id?: string
+          is_primary_document?: boolean | null
           pages?: number | null
           processing_status?: string | null
           product_id?: string
           source_type?: string | null
+          source_url?: string | null
+          subcategory?: string | null
           title?: string
           updated_at?: string
+          variant_code?: string | null
           version_date?: string | null
           version_label?: string | null
         }
