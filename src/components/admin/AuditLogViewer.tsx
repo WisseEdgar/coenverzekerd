@@ -121,8 +121,7 @@ export const AuditLogViewer = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">Alle tabellen</SelectItem>
-              <SelectItem value="insurance_types">Insurance Types</SelectItem>
-              <SelectItem value="insurance_companies">Insurance Companies</SelectItem>
+              <SelectItem value="insurers">Insurers</SelectItem>
               <SelectItem value="documents">Documents</SelectItem>
             </SelectContent>
           </Select>

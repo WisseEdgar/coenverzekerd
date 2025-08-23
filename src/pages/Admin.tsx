@@ -3,10 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Building2, FileText, RefreshCw, Zap, FileSearch2, MessageSquare, Database, Settings, Building, RotateCcw, Shield, BarChart, Eye, Trash2, Upload } from 'lucide-react';
 import { AdminGuard } from '@/components/admin/AdminGuard';
 import { DocumentTestProcessor } from '@/components/admin/DocumentTestProcessor';
-import { InsuranceTypesManager } from '@/components/admin/InsuranceTypesManager';
-import { InsuranceCompaniesManager } from '@/components/admin/InsuranceCompaniesManager';
 import { FailedDocumentProcessor } from '@/components/admin/FailedDocumentProcessor';
-import { DocumentReassignmentManager } from '@/components/admin/DocumentReassignmentManager';
 import { BatchProcessEmbeddings } from '@/components/admin/BatchProcessEmbeddings';
 import { AuditLogViewer } from '@/components/admin/AuditLogViewer';
 import { MessageFeedbackViewer } from '@/components/admin/MessageFeedbackViewer';
@@ -59,35 +56,25 @@ export default function Admin() {
               <span className="hidden sm:inline">Database Opschoning</span>
               <span className="sm:hidden">Cleanup</span>
             </TabsTrigger>
-            <TabsTrigger value="types" className="flex items-center gap-2 text-xs px-3 py-2">
-              <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">Verzekeringtypes</span>
-              <span className="sm:hidden">Types</span>
-            </TabsTrigger>
-            <TabsTrigger value="companies" className="flex items-center gap-2 text-xs px-3 py-2">
-              <Building className="h-4 w-4" />
-              <span className="hidden sm:inline">Maatschappijen</span>
-              <span className="sm:hidden">Bedrijven</span>
-            </TabsTrigger>
-            <TabsTrigger value="reassign" className="flex items-center gap-2 text-xs px-3 py-2">
-              <RotateCcw className="h-4 w-4" />
-              <span className="hidden sm:inline">Document Herindeling</span>
-              <span className="sm:hidden">Herindeling</span>
+            <TabsTrigger value="upload" className="flex items-center gap-2 text-xs px-3 py-2">
+              <Upload className="h-4 w-4" />
+              <span className="hidden sm:inline">Document Upload</span>
+              <span className="sm:hidden">Upload</span>
             </TabsTrigger>
             <TabsTrigger value="reprocess" className="flex items-center gap-2 text-xs px-3 py-2">
               <RefreshCw className="h-4 w-4" />
               <span className="hidden sm:inline">PDF Extractie Herstel</span>
               <span className="sm:hidden">PDF Herstel</span>
             </TabsTrigger>
-            <TabsTrigger value="upload" className="flex items-center gap-2 text-xs px-3 py-2">
-              <Upload className="h-4 w-4" />
-              <span className="hidden sm:inline">Document Upload</span>
-              <span className="sm:hidden">Upload</span>
-            </TabsTrigger>
             <TabsTrigger value="embeddings" className="flex items-center gap-2 text-xs px-3 py-2">
               <Zap className="h-4 w-4" />
               <span className="hidden sm:inline">AI Processing</span>
               <span className="sm:hidden">AI</span>
+            </TabsTrigger>
+            <TabsTrigger value="audit" className="flex items-center gap-2 text-xs px-3 py-2">
+              <Shield className="h-4 w-4" />
+              <span className="hidden sm:inline">Audit Log</span>
+              <span className="sm:hidden">Audit</span>
             </TabsTrigger>
             <TabsTrigger value="audit" className="flex items-center gap-2 text-xs px-3 py-2">
               <Shield className="h-4 w-4" />
@@ -142,18 +129,6 @@ export default function Admin() {
             <DatabaseCleanupManager />
           </TabsContent>
 
-          <TabsContent value="types" className="space-y-6">
-            <InsuranceTypesManager />
-          </TabsContent>
-          
-          <TabsContent value="companies" className="space-y-6">
-            <InsuranceCompaniesManager />
-          </TabsContent>
-          
-          <TabsContent value="reassign" className="space-y-6">
-            <DocumentReassignmentManager />
-          </TabsContent>
-          
           <TabsContent value="reprocess" className="space-y-6">
             <DocumentTestProcessor />
             <FailedDocumentProcessor />

@@ -37,56 +37,29 @@ export const AdvancedDocumentManager: React.FC = () => {
     try {
       setLoading(true);
 
-      // Load documents from both tables
-      const [v1Response, v2Response] = await Promise.all([
-        supabase
-          .from('documents')
-          .select(`
-            id,
-            title,
-            filename,
-            created_at,
-            file_size,
-            insurance_types(name),
-            insurance_companies(name)
-          `)
-          .order('created_at', { ascending: false }),
-        
-        supabase
-          .from('documents_v2')
-          .select(`
-            id,
-            title,
-            filename,
-            created_at,
-            processing_status,
-            file_size,
-            pages,
-            products(
-              name,
-              line_of_business,
-              insurers(name)
-            )
-          `)
-          .order('created_at', { ascending: false })
-      ]);
+      // Load documents from documents_v2 table only (updated schema)
+      const { data, error } = await supabase
+        .from('documents_v2')
+        .select(`
+          id,
+          title,
+          filename,
+          created_at,
+          processing_status,
+          file_size,
+          pages,
+          products(
+            name,
+            line_of_business,
+            insurers(name)
+          )
+        `)
+        .order('created_at', { ascending: false });
 
-      if (v1Response.error) throw v1Response.error;
-      if (v2Response.error) throw v2Response.error;
+      if (error) throw error;
 
-      // Transform and combine the data
-      const v1Docs = (v1Response.data || []).map(doc => ({
-        id: doc.id,
-        title: doc.title,
-        filename: doc.filename,
-        created_at: doc.created_at,
-        file_size: doc.file_size,
-        insurer_name: (doc.insurance_companies as any)?.name,
-        product_name: (doc.insurance_types as any)?.name,
-        source: 'v1' as const
-      }));
-
-      const v2Docs = (v2Response.data || []).map(doc => ({
+      // Transform the data
+      const processedDocs = (data || []).map(doc => ({
         id: doc.id,
         title: doc.title,
         filename: doc.filename,
@@ -97,10 +70,9 @@ export const AdvancedDocumentManager: React.FC = () => {
         insurer_name: (doc.products as any)?.insurers?.name,
         product_name: (doc.products as any)?.name,
         line_of_business: (doc.products as any)?.line_of_business,
-        source: 'v2' as const
       }));
 
-      setDocuments([...v1Docs, ...v2Docs]);
+      setDocuments(processedDocs);
     } catch (error) {
       console.error('Error loading documents:', error);
       toast.error('Fout bij laden van documenten');
@@ -120,10 +92,7 @@ export const AdvancedDocumentManager: React.FC = () => {
       doc.insurer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       doc.product_name?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStatus = statusFilter === 'all' || 
-      doc.processing_status === statusFilter ||
-      (statusFilter === 'v1' && (doc as any).source === 'v1') ||
-      (statusFilter === 'v2' && (doc as any).source === 'v2');
+    const matchesStatus = statusFilter === 'all' || doc.processing_status === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
@@ -152,36 +121,13 @@ export const AdvancedDocumentManager: React.FC = () => {
     try {
       setIsDeleting(true);
 
-      // Group documents by source table
-      const v1Docs = Array.from(selectedDocuments).filter(id => 
-        documents.find(doc => doc.id === id && (doc as any).source === 'v1')
-      );
-      const v2Docs = Array.from(selectedDocuments).filter(id =>
-        documents.find(doc => doc.id === id && (doc as any).source === 'v2')
-      );
+      // Delete from documents_v2 table only
+      const { error } = await supabase
+        .from('documents_v2')
+        .delete()
+        .in('id', Array.from(selectedDocuments));
 
-      // Delete from both tables
-      const deletePromises = [];
-
-      if (v1Docs.length > 0) {
-        deletePromises.push(
-          supabase.from('documents').delete().in('id', v1Docs)
-        );
-      }
-
-      if (v2Docs.length > 0) {
-        deletePromises.push(
-          supabase.from('documents_v2').delete().in('id', v2Docs)
-        );
-      }
-
-      const results = await Promise.all(deletePromises);
-      
-      // Check for errors
-      const errors = results.filter(result => result.error);
-      if (errors.length > 0) {
-        throw new Error(`Deletion errors: ${errors.map(e => e.error?.message).join(', ')}`);
-      }
+      if (error) throw error;
 
       toast.success(`${selectedDocuments.size} documenten succesvol verwijderd`);
       setSelectedDocuments(new Set());
@@ -252,8 +198,6 @@ export const AdvancedDocumentManager: React.FC = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Alle documenten</SelectItem>
-                <SelectItem value="v1">Documenten (v1)</SelectItem>
-                <SelectItem value="v2">Documenten (v2)</SelectItem>
                 <SelectItem value="pending">Wachtend</SelectItem>
                 <SelectItem value="processing">Verwerking</SelectItem>
                 <SelectItem value="completed">Voltooid</SelectItem>
@@ -347,9 +291,6 @@ export const AdvancedDocumentManager: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h4 className="font-medium truncate">{document.title}</h4>
-                      <Badge variant="outline" className="text-xs">
-                        {(document as any).source}
-                      </Badge>
                       {document.processing_status && (
                         <Badge className={getStatusColor(document.processing_status)}>
                           {document.processing_status}
@@ -365,6 +306,7 @@ export const AdvancedDocumentManager: React.FC = () => {
                       {document.pages && <span>{document.pages} pagina's</span>}
                       {document.insurer_name && <span>{document.insurer_name}</span>}
                       {document.product_name && <span>{document.product_name}</span>}
+                      {document.line_of_business && <span>{document.line_of_business}</span>}
                     </div>
                   </div>
 

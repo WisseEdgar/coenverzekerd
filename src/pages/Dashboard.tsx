@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Users, Search, FileText } from "lucide-react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import Chat from "./Chat";
-import Documents from "./Documents";
+
 import Admin from "./Admin";
 import Clients from "./Clients";
 import Settings from "./Settings";
@@ -102,7 +102,7 @@ const Dashboard = () => {
         const {
           data: allDocuments,
           error: documentsError
-        } = await supabase.from('documents').select('id');
+        } = await supabase.from('documents_v2').select('id');
         if (!documentsError && allDocuments) {
           setTotalDocuments(allDocuments.length);
         }
@@ -166,7 +166,7 @@ const Dashboard = () => {
           <main className="flex-1 p-6">
             <Routes>
               <Route path="/admin" element={<Admin />} />
-              <Route path="/documents" element={<Documents />} />
+              
               <Route path="/insurance-documents" element={<InsuranceDocuments />} />
               <Route path="/clients" element={<Clients />} />
               <Route path="/settings" element={<Settings />} />

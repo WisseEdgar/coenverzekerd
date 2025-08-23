@@ -13,13 +13,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 const TABLE_OPTIONS = [
-  { value: 'documents', label: 'Documents (Legacy)' },
   { value: 'documents_v2', label: 'Documents V2' },
   { value: 'chunks', label: 'Chunks' },
   { value: 'products', label: 'Products' },
   { value: 'insurers', label: 'Insurers' },
-  { value: 'insurance_types', label: 'Insurance Types' },
-  { value: 'insurance_companies', label: 'Insurance Companies' },
   { value: 'client_profiles', label: 'Client Profiles' }
 ];
 
