@@ -7,6 +7,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Dutch legal terminology for context enrichment
+const DUTCH_LEGAL_TERMS = [
+  'aansprakelijkheid', 'dekking', 'uitkering', 'premie', 'polis', 'voorwaarden',
+  'uitsluitingen', 'eigen risico', 'verzekeringsmaatschappij', 'verzekerde',
+  'verzekeringnemer', 'schade', 'incident', 'claimen', 'regres', 'artikel',
+  'lid', 'paragraaf', 'bepaling', 'clausule', 'wetgeving', 'AVB', 'AVV'
+];
+
 interface QueryFilters {
   line_of_business?: string;
   insurer?: string;
@@ -64,11 +72,36 @@ serve(async (req) => {
 
     console.log(`Enhanced search query: "${query}" with filters:`, filters);
 
-    // Generate embedding for the query using OpenAI
+    // Generate context-enriched embedding for the query using OpenAI
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
       throw new Error('OpenAI API key not configured');
     }
+
+    // Context-enrich the query
+    let contextualQuery = query;
+    
+    // Add filter context
+    if (filters.line_of_business) {
+      contextualQuery += ` Verzekeringslijn: ${filters.line_of_business}.`;
+    }
+    if (filters.insurer) {
+      contextualQuery += ` Verzekeraar: ${filters.insurer}.`;
+    }
+    if (filters.document_type) {
+      contextualQuery += ` Document type: ${filters.document_type}.`;
+    }
+    
+    // Add relevant legal terminology context
+    const relevantTerms = DUTCH_LEGAL_TERMS.filter(term => 
+      query.toLowerCase().includes(term.toLowerCase())
+    );
+    
+    if (relevantTerms.length > 0) {
+      contextualQuery += ` Juridische context: ${relevantTerms.join(', ')}.`;
+    }
+
+    console.log(`Context-enriched query: "${contextualQuery}"`);
 
     const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
       method: 'POST',
@@ -77,8 +110,8 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        input: query,
-        model: 'text-embedding-3-small',
+        input: contextualQuery,
+        model: 'text-embedding-3-large', // Upgraded to better model
       }),
     });
 
@@ -89,17 +122,19 @@ serve(async (req) => {
     const embeddingData = await embeddingResponse.json();
     const queryEmbedding = embeddingData.data[0].embedding;
 
-    // Perform enhanced semantic search with metadata
+    // Perform enhanced semantic search with new v2 function
     const { data: searchResults, error: searchError } = await supabase.rpc(
-      'search_insurance_chunks_enhanced',
+      'search_insurance_chunks_enhanced_v2',
       {
         query_embedding: queryEmbedding,
-        match_threshold: 0.7,
-        match_count: 24,
+        match_threshold: 0.1, // Lowered threshold for better recall
+        match_count: 50, // Increased initial count for better reranking
         line_of_business_filter: filters.line_of_business || null,
         insurer_filter: filters.insurer || null,
         document_type_filter: filters.document_type || null,
         base_insurance_code_filter: filters.base_insurance_code || null,
+        version_date_from: filters.version_date_from || null,
+        version_date_to: filters.version_date_to || null,
       }
     );
 

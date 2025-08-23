@@ -102,24 +102,30 @@ serve(async (req) => {
       extractedText = `Document filename: ${document.filename}. PDF text extraction failed, using filename for analysis.`;
     }
 
-    // Use OpenAI to extract company name and insurance type from the text
+    // Enhanced extraction using OpenAI with better prompting for Dutch insurance documents
     const extractionPrompt = `
       You are an expert at analyzing Dutch insurance documents. 
       
-      From the following document text, extract:
+      From the following document text, extract and analyze:
       1. Company name (insurance company that issued the document)
       2. Insurance type (what type of insurance this document covers)
+      3. Document structure (identify main sections, articles, or paragraphs)
+      4. Key coverage areas mentioned
       
       Text: ${extractedText}
       
       Respond in JSON format:
       {
         "company": "extracted company name",
-        "insurance_type": "extracted insurance type",
-        "confidence": "high/medium/low"
+        "insurance_type": "extracted insurance type", 
+        "confidence": "high/medium/low",
+        "key_sections": ["list of main sections found"],
+        "coverage_areas": ["list of coverage types mentioned"],
+        "document_structure": "brief description of document organization"
       }
       
-      If you cannot determine either field with confidence, set it to null.
+      Focus on Dutch insurance terminology like 'aansprakelijkheid', 'dekking', 'uitkering', etc.
+      If you cannot determine any field with confidence, set it to null.
     `;
 
     console.log('Calling OpenAI for extraction...');

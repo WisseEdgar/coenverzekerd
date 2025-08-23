@@ -26,7 +26,7 @@ interface ExtractionResult {
   };
 }
 
-// Enhanced PDF.js text extraction with better structure preservation
+// Enhanced PDF.js text extraction with better structure preservation and section detection
 async function extractWithPDFJS(pdfBuffer: Uint8Array): Promise<ExtractionResult> {
   try {
     // Import PDF.js for Deno with proper module handling
@@ -52,26 +52,44 @@ async function extractWithPDFJS(pdfBuffer: Uint8Array): Promise<ExtractionResult
       const page = await pdfDocument.getPage(pageNum);
       const textContent = await page.getTextContent();
       
-      // Build text with proper spacing and line breaks
+      // Build text with enhanced structure preservation for section detection
       const textItems = textContent.items as any[];
       let pageText = '';
       let lastY = null;
       let lastX = null;
+      let lastFontSize = null;
       
       for (const item of textItems) {
         if (item.str?.trim()) {
-          // Add line break if significant Y position change
+          // Get font information for heading detection
+          const currentFontSize = item.transform[0] || 12;
+          const isLargeText = currentFontSize > (lastFontSize || 12) * 1.2;
+          const isBold = item.fontName?.toLowerCase().includes('bold') || false;
+          
+          // Enhanced line break detection
           if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
-            pageText += '\n';
+            // Larger line break for potential headings
+            if (isLargeText || isBold) {
+              pageText += '\n\n';
+            } else {
+              pageText += '\n';
+            }
           }
           // Add space if same line but gap in X position
           else if (lastX !== null && item.transform[4] - lastX > 10) {
             pageText += ' ';
           }
           
-          pageText += item.str;
+          // Mark potential headings with special formatting
+          if ((isLargeText || isBold) && item.str.trim().length < 100) {
+            pageText += `[HEADING]${item.str}[/HEADING]`;
+          } else {
+            pageText += item.str;
+          }
+          
           lastY = item.transform[5];
           lastX = item.transform[4] + item.width;
+          lastFontSize = currentFontSize;
         }
       }
       
@@ -403,11 +421,57 @@ function chunkText(page: number, text: string, maxSize = 4000, overlap = 400): A
   return chunks;
 }
 
-// Generate embeddings
-async function embedTexts(texts: string[]): Promise<number[][]> {
+// Dutch legal terminology for context enrichment
+const DUTCH_LEGAL_TERMS = [
+  'aansprakelijkheid', 'dekking', 'uitkering', 'premie', 'polis', 'voorwaarden',
+  'uitsluitingen', 'eigen risico', 'verzekeringsmaatschappij', 'verzekerde',
+  'verzekeringnemer', 'schade', 'incident', 'claimen', 'regres', 'artikel',
+  'lid', 'paragraaf', 'bepaling', 'clausule', 'wetgeving', 'AVB', 'AVV'
+];
+
+// Enhanced embedding generation with context enrichment
+async function embedTexts(texts: string[], documentMetadata?: {
+  insurer?: string;
+  productName?: string;
+  documentType?: string;
+  sectionPath?: string;
+}): Promise<number[][]> {
   if (!OPENAI_API_KEY) {
     throw new Error('OpenAI API key not configured');
   }
+
+  // Context-enrich the texts for better semantic understanding
+  const enrichedTexts = texts.map(text => {
+    let contextualText = '';
+    
+    // Add document metadata context
+    if (documentMetadata) {
+      if (documentMetadata.insurer) {
+        contextualText += `Verzekeraar: ${documentMetadata.insurer}. `;
+      }
+      if (documentMetadata.productName) {
+        contextualText += `Product: ${documentMetadata.productName}. `;
+      }
+      if (documentMetadata.documentType) {
+        contextualText += `Document type: ${documentMetadata.documentType}. `;
+      }
+      if (documentMetadata.sectionPath) {
+        contextualText += `Sectie: ${documentMetadata.sectionPath}. `;
+      }
+    }
+    
+    // Add relevant legal terminology context
+    const relevantTerms = DUTCH_LEGAL_TERMS.filter(term => 
+      text.toLowerCase().includes(term.toLowerCase())
+    );
+    
+    if (relevantTerms.length > 0) {
+      contextualText += `Juridische context: ${relevantTerms.join(', ')}. `;
+    }
+    
+    // Combine context with original text
+    return contextualText + text;
+  });
 
   const response = await fetch('https://api.openai.com/v1/embeddings', {
     method: 'POST',
@@ -416,8 +480,8 @@ async function embedTexts(texts: string[]): Promise<number[][]> {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'text-embedding-3-small',
-      input: texts,
+      model: 'text-embedding-3-large', // Upgraded to better model
+      input: enrichedTexts,
       encoding_format: 'float'
     }),
   });
@@ -430,6 +494,126 @@ async function embedTexts(texts: string[]): Promise<number[][]> {
 
   const data = await response.json();
   return data.data.map((item: any) => item.embedding);
+}
+
+// Intelligent section detection for Dutch insurance documents
+function detectSections(text: string): Array<{
+  path: string;
+  title: string;
+  content: string;
+  level: number;
+  pageStart?: number;
+}> {
+  const sections: Array<{
+    path: string;
+    title: string;
+    content: string;
+    level: number;
+    pageStart?: number;
+  }> = [];
+  
+  // Dutch insurance document patterns
+  const patterns = [
+    // Artikel patterns: "Artikel 1.2.3", "Art. 1.2"
+    /(?:^|\n)\s*(?:Artikel|Art\.?)\s+(\d+(?:\.\d+)*)\s*[:\-.]?\s*([^\n]+)/gmi,
+    
+    // Section patterns: "§ 1.2.3", "§1.2"
+    /(?:^|\n)\s*§\s*(\d+(?:\.\d+)*)\s*[:\-.]?\s*([^\n]+)/gmi,
+    
+    // Paragraaf patterns
+    /(?:^|\n)\s*(?:Paragraaf|Par\.?)\s+(\d+(?:\.\d+)*)\s*[:\-.]?\s*([^\n]+)/gmi,
+    
+    // Hoofdstuk patterns
+    /(?:^|\n)\s*(?:Hoofdstuk|Hfdst\.?)\s+(\d+(?:\.\d+)*)\s*[:\-.]?\s*([^\n]+)/gmi,
+    
+    // Enhanced heading detection with special markers
+    /\[HEADING\]([^[\]]+)\[\/HEADING\]/g
+  ];
+  
+  const lines = text.split('\n');
+  let currentSection = '';
+  let currentContent = '';
+  let sectionCount = 0;
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    let foundSection = false;
+    
+    // Check against all patterns
+    for (const pattern of patterns) {
+      pattern.lastIndex = 0; // Reset regex
+      const match = pattern.exec(line);
+      
+      if (match) {
+        // Save previous section if exists
+        if (currentSection && currentContent.trim()) {
+          sections.push({
+            path: currentSection,
+            title: currentSection,
+            content: currentContent.trim(),
+            level: (currentSection.match(/\./g) || []).length + 1,
+            pageStart: 1
+          });
+        }
+        
+        // Start new section
+        const sectionNumber = match[1] || `${++sectionCount}`;
+        const sectionTitle = match[2] || match[1] || line.replace(/\[HEADING\]|\[\/HEADING\]/g, '').trim();
+        
+        currentSection = sectionNumber;
+        currentContent = sectionTitle + '\n';
+        foundSection = true;
+        break;
+      }
+    }
+    
+    if (!foundSection) {
+      currentContent += line + '\n';
+    }
+  }
+  
+  // Add final section
+  if (currentSection && currentContent.trim()) {
+    sections.push({
+      path: currentSection,
+      title: currentSection,
+      content: currentContent.trim(),
+      level: (currentSection.match(/\./g) || []).length + 1,
+      pageStart: 1
+    });
+  }
+  
+  return sections;
+}
+
+// Generate structured citation labels for chunks
+function generateCitationLabel(documentMetadata: any, section: any, page: number): string {
+  let citation = '';
+  
+  // Add insurer if available
+  if (documentMetadata?.insurer) {
+    citation += `${documentMetadata.insurer} `;
+  }
+  
+  // Add document type/title
+  if (documentMetadata?.documentTitle) {
+    citation += `${documentMetadata.documentTitle} `;
+  } else if (documentMetadata?.documentType) {
+    citation += `${documentMetadata.documentType} `;
+  }
+  
+  // Add section if available
+  if (section?.path) {
+    citation += `§${section.path} `;
+    if (section.title && section.title !== section.path) {
+      citation += `${section.title} `;
+    }
+  }
+  
+  // Add page reference
+  citation += `(p. ${page})`;
+  
+  return citation.trim() || `Pagina ${page}`;
 }
 
 serve(async (req) => {
@@ -532,15 +716,94 @@ serve(async (req) => {
 
     console.log(`Extraction completed: ${extractionResult.method}, ${extractionResult.pages.length} pages, ${extractionResult.stats.totalChars} chars`);
 
-    // Create chunks from all pages
-    const allChunks = extractionResult.pages.flatMap(page => chunkText(page.page, page.text));
-    console.log(`Created ${allChunks.length} chunks`);
+    // Get document metadata for context enrichment
+    const { data: documentInfo, error: docError } = await supabase
+      .from('documents_v2')
+      .select(`
+        title,
+        document_type,
+        base_insurance_code,
+        products!inner(
+          name,
+          insurers!inner(name)
+        )
+      `)
+      .eq('id', body.document_id)
+      .single();
+
+    let documentMetadata = {};
+    if (!docError && documentInfo) {
+      documentMetadata = {
+        insurer: documentInfo.products?.insurers?.name,
+        productName: documentInfo.products?.name,
+        documentType: documentInfo.document_type,
+        documentTitle: documentInfo.title
+      };
+    }
+
+    // Detect document structure and sections
+    const allText = extractionResult.pages.map(p => p.text).join('\n\n');
+    const detectedSections = detectSections(allText);
+    console.log(`Detected ${detectedSections.length} sections`);
+
+    // Insert sections into database
+    const sectionsToInsert = detectedSections.map((section, index) => ({
+      document_id: body.document_id,
+      title: section.title,
+      section_path: section.path,
+      page_start: section.pageStart || 1,
+      page_end: section.pageStart || 1,
+      order_key: index + 1,
+      section_label: `§${section.path}`,
+      heading_path: section.path
+    }));
+
+    let insertedSections: any[] = [];
+    if (sectionsToInsert.length > 0) {
+      const { data: sections, error: sectionsError } = await supabase
+        .from('sections')
+        .insert(sectionsToInsert)
+        .select('id, section_path');
+
+      if (sectionsError) {
+        console.warn('Warning: Could not insert sections:', sectionsError);
+      } else {
+        insertedSections = sections || [];
+        console.log(`Inserted ${insertedSections.length} sections`);
+      }
+    }
+
+    // Create enhanced chunks with section awareness
+    const allChunks = extractionResult.pages.flatMap((page, pageIndex) => {
+      const pageChunks = chunkText(page.page, page.text);
+      
+      // Try to assign chunks to sections based on content matching
+      return pageChunks.map((chunk, chunkIndex) => {
+        const matchingSection = detectedSections.find(section => 
+          chunk.text.includes(section.title) || 
+          section.content.includes(chunk.text.substring(0, 100))
+        );
+        
+        const matchingSectionRecord = matchingSection ? 
+          insertedSections.find(s => s.section_path === matchingSection.path) : null;
+
+        return {
+          ...chunk,
+          section_id: matchingSectionRecord?.id || null,
+          section_path: matchingSection?.path || '',
+          chunk_index: chunkIndex,
+          citation_label: generateCitationLabel(documentMetadata, matchingSection, page.page)
+        };
+      });
+    });
+
+    console.log(`Created ${allChunks.length} enhanced chunks`);
 
     if (allChunks.length === 0) {
       throw new Error('No chunks created from document');
     }
 
-    // Generate embeddings in batches
+    // Generate context-enriched embeddings in batches
     const BATCH_SIZE = 32;
     const allEmbeddings: number[][] = [];
     
@@ -548,23 +811,35 @@ serve(async (req) => {
       const batch = allChunks.slice(i, i + BATCH_SIZE);
       const batchTexts = batch.map(chunk => chunk.text);
       
-      console.log(`Processing embedding batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(allChunks.length/BATCH_SIZE)}`);
+      console.log(`Processing enhanced embedding batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(allChunks.length/BATCH_SIZE)}`);
       
-      const embeddings = await embedTexts(batchTexts);
+      // Include document context for each chunk
+      const chunkMetadata = {
+        ...documentMetadata,
+        sectionPath: batch[0]?.section_path || ''
+      };
+      
+      const embeddings = await embedTexts(batchTexts, chunkMetadata);
       allEmbeddings.push(...embeddings);
     }
 
-    console.log(`Generated ${allEmbeddings.length} embeddings`);
+    console.log(`Generated ${allEmbeddings.length} context-enriched embeddings`);
 
-    // Insert chunks into database
+    // Insert enhanced chunks into database
     const chunksToInsert = allChunks.map(chunk => ({
       document_id: body.document_id,
+      section_id: chunk.section_id,
       page: chunk.page,
       text: chunk.text,
       token_count: chunk.tokenCount,
+      section_path: chunk.section_path || null,
+      chunk_index: chunk.chunk_index || 0,
+      citation_label: chunk.citation_label,
       metadata: {
         extraction_method: extractionResult.method,
-        extraction_stats: extractionResult.stats
+        extraction_stats: extractionResult.stats,
+        context_enriched: true,
+        document_metadata: documentMetadata
       }
     }));
 
@@ -578,9 +853,9 @@ serve(async (req) => {
       throw new Error(`Failed to insert chunks: ${chunksError.message}`);
     }
 
-    console.log(`Inserted ${insertedChunks.length} chunks`);
+    console.log(`Inserted ${insertedChunks.length} enhanced chunks`);
 
-    // Insert embeddings
+    // Insert context-enriched embeddings
     const embeddingsToInsert = insertedChunks.map((chunk: any, index: number) => ({
       chunk_id: chunk.id,
       embedding: allEmbeddings[index]
@@ -595,7 +870,7 @@ serve(async (req) => {
       throw new Error(`Failed to insert embeddings: ${embeddingsError.message}`);
     }
 
-    console.log(`Inserted ${embeddingsToInsert.length} embeddings`);
+    console.log(`Inserted ${embeddingsToInsert.length} context-enriched embeddings`);
 
     // Update document processing status
     const { error: updateError } = await supabase
