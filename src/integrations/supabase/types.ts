@@ -498,15 +498,7 @@ export type Database = {
           processing_details?: Json | null
           status?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "document_processing_logs_document_id_fkey"
-            columns: ["document_id"]
-            isOneToOne: false
-            referencedRelation: "documents"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       document_relationships: {
         Row: {
@@ -543,72 +535,6 @@ export type Database = {
             columns: ["parent_document_id"]
             isOneToOne: false
             referencedRelation: "documents_v2"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      documents: {
-        Row: {
-          created_at: string
-          embedding: string | null
-          extracted_text: string | null
-          file_path: string
-          file_size: number | null
-          filename: string
-          id: string
-          insurance_company_id: string | null
-          insurance_type_id: string | null
-          mime_type: string
-          summary: string | null
-          title: string
-          updated_at: string
-          uploaded_by: string | null
-        }
-        Insert: {
-          created_at?: string
-          embedding?: string | null
-          extracted_text?: string | null
-          file_path: string
-          file_size?: number | null
-          filename: string
-          id?: string
-          insurance_company_id?: string | null
-          insurance_type_id?: string | null
-          mime_type?: string
-          summary?: string | null
-          title: string
-          updated_at?: string
-          uploaded_by?: string | null
-        }
-        Update: {
-          created_at?: string
-          embedding?: string | null
-          extracted_text?: string | null
-          file_path?: string
-          file_size?: number | null
-          filename?: string
-          id?: string
-          insurance_company_id?: string | null
-          insurance_type_id?: string | null
-          mime_type?: string
-          summary?: string | null
-          title?: string
-          updated_at?: string
-          uploaded_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "documents_insurance_company_id_fkey"
-            columns: ["insurance_company_id"]
-            isOneToOne: false
-            referencedRelation: "insurance_companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "documents_insurance_type_id_fkey"
-            columns: ["insurance_type_id"]
-            isOneToOne: false
-            referencedRelation: "insurance_types"
             referencedColumns: ["id"]
           },
         ]
@@ -695,54 +621,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      insurance_companies: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      insurance_types: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name?: string
-          updated_at?: string
-        }
-        Relationships: []
       }
       insurers: {
         Row: {
@@ -1152,59 +1030,6 @@ export type Database = {
       nlevel: {
         Args: { "": unknown }
         Returns: number
-      }
-      search_chunks_cosine: {
-        Args: { insurer_id?: string; k?: number; lob?: string; qvec: string }
-        Returns: {
-          document_id: string
-          document_title: string
-          id: string
-          insurer_name: string
-          metadata: Json
-          page: number
-          product_name: string
-          similarity: number
-          text: string
-          version_label: string
-        }[]
-      }
-      search_documents: {
-        Args: {
-          match_count?: number
-          match_threshold?: number
-          query_embedding: string
-        }
-        Returns: {
-          filename: string
-          id: string
-          insurance_company: string
-          insurance_type: string
-          similarity: number
-          summary: string
-          title: string
-        }[]
-      }
-      search_insurance_chunks: {
-        Args: {
-          insurer_filter?: string
-          line_of_business_filter?: string
-          match_count?: number
-          match_threshold?: number
-          query_embedding: string
-        }
-        Returns: {
-          chunk_id: string
-          chunk_text: string
-          document_id: string
-          document_title: string
-          insurer_name: string
-          metadata: Json
-          page: number
-          product_name: string
-          section_id: string
-          similarity: number
-          version_label: string
-        }[]
       }
       search_insurance_chunks_enhanced: {
         Args: {
