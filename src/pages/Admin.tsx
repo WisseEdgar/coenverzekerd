@@ -21,6 +21,7 @@ import { DocumentOrphanManager } from '@/components/admin/DocumentOrphanManager'
 import { DatabasePerformanceMonitor } from '@/components/admin/DatabasePerformanceMonitor';
 import { EmbeddingReprocessor } from '@/components/admin/EmbeddingReprocessor';
 import { InsuranceDocumentUpload } from '@/components/insurance/InsuranceDocumentUpload';
+import { BulkInsuranceDocumentUpload } from '@/components/insurance/BulkInsuranceDocumentUpload';
 
 export default function Admin() {
   return (
@@ -160,6 +161,7 @@ export default function Admin() {
           
           <TabsContent value="upload" className="space-y-6">
             <InsuranceDocumentUpload />
+            <BulkInsuranceDocumentUpload />
           </TabsContent>
           
           <TabsContent value="embeddings" className="space-y-6">
