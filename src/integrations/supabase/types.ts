@@ -1234,6 +1234,40 @@ export type Database = {
           version_label: string
         }[]
       }
+      search_insurance_chunks_enhanced_v2: {
+        Args: {
+          base_insurance_code_filter?: string
+          document_type_filter?: string
+          insurer_filter?: string
+          line_of_business_filter?: string
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+          version_date_from?: string
+          version_date_to?: string
+        }
+        Returns: {
+          base_insurance_code: string
+          chunk_embedding: string
+          chunk_id: string
+          chunk_order: number
+          chunk_text: string
+          document_code: string
+          document_id: string
+          document_title: string
+          document_type: string
+          insurer_name: string
+          is_primary_document: boolean
+          metadata: Json
+          page: number
+          product_name: string
+          section_id: string
+          section_path: unknown
+          section_title: string
+          similarity: number
+          version_label: string
+        }[]
+      }
       text2ltree: {
         Args: { "": string }
         Returns: unknown
