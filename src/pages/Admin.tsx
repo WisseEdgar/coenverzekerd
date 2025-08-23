@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building2, FileText, RefreshCw, Zap, FileSearch2, MessageSquare, Database, Settings, Building, RotateCcw, Shield, BarChart, Eye, Trash2 } from 'lucide-react';
+import { Building2, FileText, RefreshCw, Zap, FileSearch2, MessageSquare, Database, Settings, Building, RotateCcw, Shield, BarChart, Eye, Trash2, Upload } from 'lucide-react';
 import { AdminGuard } from '@/components/admin/AdminGuard';
 import { DocumentTestProcessor } from '@/components/admin/DocumentTestProcessor';
 import { InsuranceTypesManager } from '@/components/admin/InsuranceTypesManager';
@@ -19,6 +19,8 @@ import { DataIntegrityChecker } from '@/components/admin/DataIntegrityChecker';
 import { BulkDataEditor } from '@/components/admin/BulkDataEditor';
 import { DocumentOrphanManager } from '@/components/admin/DocumentOrphanManager';
 import { DatabasePerformanceMonitor } from '@/components/admin/DatabasePerformanceMonitor';
+import { EmbeddingReprocessor } from '@/components/admin/EmbeddingReprocessor';
+import { InsuranceDocumentUpload } from '@/components/insurance/InsuranceDocumentUpload';
 
 export default function Admin() {
   return (
@@ -75,6 +77,11 @@ export default function Admin() {
               <RefreshCw className="h-4 w-4" />
               <span className="hidden sm:inline">PDF Extractie Herstel</span>
               <span className="sm:hidden">PDF Herstel</span>
+            </TabsTrigger>
+            <TabsTrigger value="upload" className="flex items-center gap-2 text-xs px-3 py-2">
+              <Upload className="h-4 w-4" />
+              <span className="hidden sm:inline">Document Upload</span>
+              <span className="sm:hidden">Upload</span>
             </TabsTrigger>
             <TabsTrigger value="embeddings" className="flex items-center gap-2 text-xs px-3 py-2">
               <Zap className="h-4 w-4" />
@@ -151,8 +158,13 @@ export default function Admin() {
             <FailedDocumentProcessor />
           </TabsContent>
           
+          <TabsContent value="upload" className="space-y-6">
+            <InsuranceDocumentUpload />
+          </TabsContent>
+          
           <TabsContent value="embeddings" className="space-y-6">
             <BatchProcessEmbeddings />
+            <EmbeddingReprocessor />
           </TabsContent>
           
           <TabsContent value="audit" className="space-y-6">
