@@ -1,0 +1,11 @@
+{
+  "placeholder": {
+    "section_title": "Placeholder Section",
+    "section_path": "1.1", 
+    "document_title": "Sample Insurance Document",
+    "product_name": "Sample Product",
+    "insurer_name": "Sample Insurer",
+    "citation_label": "Sample Insurer Sample Product §1.1 Placeholder Section"
+  },
+  "note": "This file will be populated with actual section mappings when verify_cleanup.ts is executed with database access"
+}
