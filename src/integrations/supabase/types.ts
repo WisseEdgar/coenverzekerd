@@ -176,6 +176,13 @@ export type Database = {
             foreignKeyName: "chunk_embeddings_chunk_id_fkey"
             columns: ["chunk_id"]
             isOneToOne: false
+            referencedRelation: "chunk_citations"
+            referencedColumns: ["chunk_id"]
+          },
+          {
+            foreignKeyName: "chunk_embeddings_chunk_id_fkey"
+            columns: ["chunk_id"]
+            isOneToOne: false
             referencedRelation: "chunks"
             referencedColumns: ["id"]
           },
@@ -184,6 +191,7 @@ export type Database = {
       chunks: {
         Row: {
           base_insurance_code: string | null
+          chunk_index: number | null
           created_at: string
           document_code: string | null
           document_id: string
@@ -191,12 +199,16 @@ export type Database = {
           id: string
           metadata: Json | null
           page: number | null
+          paragraph_end: number | null
+          paragraph_start: number | null
           section_id: string | null
+          section_path: unknown | null
           text: string
           token_count: number | null
         }
         Insert: {
           base_insurance_code?: string | null
+          chunk_index?: number | null
           created_at?: string
           document_code?: string | null
           document_id: string
@@ -204,12 +216,16 @@ export type Database = {
           id?: string
           metadata?: Json | null
           page?: number | null
+          paragraph_end?: number | null
+          paragraph_start?: number | null
           section_id?: string | null
+          section_path?: unknown | null
           text: string
           token_count?: number | null
         }
         Update: {
           base_insurance_code?: string | null
+          chunk_index?: number | null
           created_at?: string
           document_code?: string | null
           document_id?: string
@@ -217,7 +233,10 @@ export type Database = {
           id?: string
           metadata?: Json | null
           page?: number | null
+          paragraph_end?: number | null
+          paragraph_start?: number | null
           section_id?: string | null
+          section_path?: unknown | null
           text?: string
           token_count?: number | null
         }
@@ -926,24 +945,39 @@ export type Database = {
           document_id: string
           heading_path: string | null
           id: string
+          order_key: number | null
           page_end: number | null
           page_start: number | null
+          parent_path: unknown | null
+          section_label: string | null
+          section_path: unknown | null
+          title: string | null
         }
         Insert: {
           created_at?: string
           document_id: string
           heading_path?: string | null
           id?: string
+          order_key?: number | null
           page_end?: number | null
           page_start?: number | null
+          parent_path?: unknown | null
+          section_label?: string | null
+          section_path?: unknown | null
+          title?: string | null
         }
         Update: {
           created_at?: string
           document_id?: string
           heading_path?: string | null
           id?: string
+          order_key?: number | null
           page_end?: number | null
           page_start?: number | null
+          parent_path?: unknown | null
+          section_label?: string | null
+          section_path?: unknown | null
+          title?: string | null
         }
         Relationships: [
           {
@@ -981,9 +1015,23 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      chunk_citations: {
+        Row: {
+          chunk_id: string | null
+          citation_label: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      _ltree_compress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      _ltree_gist_options: {
+        Args: { "": unknown }
+        Returns: undefined
+      }
       get_documents_without_embeddings: {
         Args: { batch_size?: number }
         Returns: {
@@ -1007,9 +1055,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      hash_ltree: {
+        Args: { "": unknown }
+        Returns: number
+      }
       is_admin: {
         Args: { _user_id?: string }
         Returns: boolean
+      }
+      lca: {
+        Args: { "": unknown[] }
+        Returns: unknown
       }
       log_admin_action: {
         Args: {
@@ -1020,6 +1076,82 @@ export type Database = {
           _table_name?: string
         }
         Returns: undefined
+      }
+      lquery_in: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      lquery_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      lquery_recv: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      lquery_send: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      ltree_compress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ltree_decompress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ltree_gist_in: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ltree_gist_options: {
+        Args: { "": unknown }
+        Returns: undefined
+      }
+      ltree_gist_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ltree_in: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ltree_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ltree_recv: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ltree_send: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      ltree2text: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      ltxtq_in: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ltxtq_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ltxtq_recv: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ltxtq_send: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      nlevel: {
+        Args: { "": unknown }
+        Returns: number
       }
       search_chunks_cosine: {
         Args: { insurer_id?: string; k?: number; lob?: string; qvec: string }
@@ -1101,6 +1233,10 @@ export type Database = {
           similarity: number
           version_label: string
         }[]
+      }
+      text2ltree: {
+        Args: { "": string }
+        Returns: unknown
       }
     }
     Enums: {
