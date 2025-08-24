@@ -1,20 +1,18 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building2, FileText, RefreshCw, Zap, FileSearch2, MessageSquare, Database, Settings, Building, RotateCcw, Shield, BarChart, Eye, Trash2, Upload } from 'lucide-react';
+import { RefreshCw, Zap, FileSearch2, MessageSquare, Database, Settings, Shield, BarChart, Eye, Trash2, Upload } from 'lucide-react';
 import { AdminGuard } from '@/components/admin/AdminGuard';
 import { DocumentTestProcessor } from '@/components/admin/DocumentTestProcessor';
 import { FailedDocumentProcessor } from '@/components/admin/FailedDocumentProcessor';
 import { BatchProcessEmbeddings } from '@/components/admin/BatchProcessEmbeddings';
 import { AuditLogViewer } from '@/components/admin/AuditLogViewer';
 import { MessageFeedbackViewer } from '@/components/admin/MessageFeedbackViewer';
-import DocumentMigrationManager from '@/components/admin/DocumentMigrationManager';
 import { DatabaseSchemaViewer } from '@/components/admin/DatabaseSchemaViewer';
 import { TableStatistics } from '@/components/admin/TableStatistics';
 import { AdvancedDocumentManager } from '@/components/admin/AdvancedDocumentManager';
 import { DatabaseCleanupManager } from '@/components/admin/DatabaseCleanupManager';
 import { DataIntegrityChecker } from '@/components/admin/DataIntegrityChecker';
 import { BulkDataEditor } from '@/components/admin/BulkDataEditor';
-import { DocumentOrphanManager } from '@/components/admin/DocumentOrphanManager';
 import { DatabasePerformanceMonitor } from '@/components/admin/DatabasePerformanceMonitor';
 import { EmbeddingReprocessor } from '@/components/admin/EmbeddingReprocessor';
 import { InsuranceDocumentUpload } from '@/components/insurance/InsuranceDocumentUpload';
@@ -76,20 +74,10 @@ export default function Admin() {
               <span className="hidden sm:inline">Audit Log</span>
               <span className="sm:hidden">Audit</span>
             </TabsTrigger>
-            <TabsTrigger value="audit" className="flex items-center gap-2 text-xs px-3 py-2">
-              <Shield className="h-4 w-4" />
-              <span className="hidden sm:inline">Audit Log</span>
-              <span className="sm:hidden">Audit</span>
-            </TabsTrigger>
             <TabsTrigger value="feedback" className="flex items-center gap-2 text-xs px-3 py-2">
               <MessageSquare className="h-4 w-4" />
               <span className="hidden sm:inline">Message Feedback</span>
               <span className="sm:hidden">Feedback</span>
-            </TabsTrigger>
-            <TabsTrigger value="migration" className="flex items-center gap-2 text-xs px-3 py-2">
-              <Database className="h-4 w-4" />
-              <span className="hidden sm:inline">Document Migratie</span>
-              <span className="sm:hidden">Migratie</span>
             </TabsTrigger>
             <TabsTrigger value="integrity" className="flex items-center gap-2 text-xs px-3 py-2">
               <Shield className="h-4 w-4" />
@@ -100,11 +88,6 @@ export default function Admin() {
               <Database className="h-4 w-4" />
               <span className="hidden sm:inline">Bulk Editor</span>
               <span className="sm:hidden">Bulk</span>
-            </TabsTrigger>
-            <TabsTrigger value="orphans" className="flex items-center gap-2 text-xs px-3 py-2">
-              <FileSearch2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Orphan Manager</span>
-              <span className="sm:hidden">Orphans</span>
             </TabsTrigger>
             <TabsTrigger value="performance" className="flex items-center gap-2 text-xs px-3 py-2">
               <BarChart className="h-4 w-4" />
@@ -152,20 +135,12 @@ export default function Admin() {
             <MessageFeedbackViewer />
           </TabsContent>
           
-          <TabsContent value="migration" className="space-y-6">
-            <DocumentMigrationManager />
-          </TabsContent>
-          
           <TabsContent value="integrity" className="space-y-6">
             <DataIntegrityChecker />
           </TabsContent>
           
           <TabsContent value="bulk-editor" className="space-y-6">
             <BulkDataEditor />
-          </TabsContent>
-          
-          <TabsContent value="orphans" className="space-y-6">
-            <DocumentOrphanManager />
           </TabsContent>
           
           <TabsContent value="performance" className="space-y-6">
