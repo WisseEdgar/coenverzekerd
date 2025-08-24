@@ -61,20 +61,7 @@ interface SearchFilters {
   insurer?: string;
 }
 
-const INSURANCE_LINES = [
-  'Aansprakelijkheidsverzekering',
-  'Arbeidsongeschiktheidsverzekering', 
-  'Autoverzekering',
-  'Bedrijfsschadeverzekering',  
-  'CAR-verzekering',
-  'Cyberverzekering',
-  'Opstalverzekering',
-  'Inboedelverzekering',
-  'Reisverzekering',
-  'Transportverzekering',
-  'Zorgverzekering',
-  'Overige'
-];
+import { INSURANCE_LINES } from '@/lib/insuranceTypes';
 const Chat = () => {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);

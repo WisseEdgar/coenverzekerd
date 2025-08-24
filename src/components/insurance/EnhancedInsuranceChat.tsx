@@ -42,23 +42,7 @@ interface PipelineStats {
   final_results: number;
 }
 
-const INSURANCE_LINES = [
-  'Aansprakelijkheidsverzekering',
-  'Brandverzekering',
-  'Rechtsbijstandverzekering',
-  'Bedrijfsschadeverzekering',
-  'Transportverzekering',
-  'Werkgeversaansprakelijkheidsverzekering'
-];
-
-const INSURERS = [
-  'Univé',
-  'ASR',
-  'Allianz',
-  'Centraal Beheer',
-  'Nationale Nederlanden',
-  'Aegon'
-];
+import { INSURANCE_LINES, INSURERS } from '@/lib/insuranceTypes';
 
 export function EnhancedInsuranceChat() {
   const [messages, setMessages] = useState<Message[]>([]);

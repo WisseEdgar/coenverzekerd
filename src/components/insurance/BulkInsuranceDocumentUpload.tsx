@@ -23,20 +23,7 @@ interface UploadedPDFFile {
   documentId?: string;
 }
 
-const INSURANCE_LINES = [
-  'Aansprakelijkheidsverzekering',
-  'Arbeidsongeschiktheidsverzekering', 
-  'Autoverzekering',
-  'Bedrijfsschadeverzekering',  
-  'CAR-verzekering',
-  'Cyberverzekering',
-  'Opstalverzekering',
-  'Inboedelverzekering',
-  'Reisverzekering',
-  'Transportverzekering',
-  'Zorgverzekering',
-  'Overige'
-];
+import { INSURANCE_LINES } from '@/lib/insuranceTypes';
 
 export function BulkInsuranceDocumentUpload() {
   const { toast } = useToast();

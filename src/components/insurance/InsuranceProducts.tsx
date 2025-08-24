@@ -14,20 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
-const INSURANCE_LINES = [
-  'Aansprakelijkheidsverzekering',
-  'Arbeidsongeschiktheidsverzekering', 
-  'Autoverzekering',
-  'Bedrijfsschadeverzekering',  
-  'CAR-verzekering',
-  'Cyberverzekering',
-  'Opstalverzekering',
-  'Inboedelverzekering',
-  'Reisverzekering',
-  'Transportverzekering',
-  'Zorgverzekering',
-  'Overige'
-];
+import { INSURANCE_LINES } from '@/lib/insuranceTypes';
 
 interface Product {
   id: string;
