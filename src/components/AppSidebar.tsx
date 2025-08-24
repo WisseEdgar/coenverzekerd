@@ -18,10 +18,6 @@ const toolsItems = [{
 }];
 
 const adminToolsItems = [{
-  title: "Documenten",
-  url: "/dashboard/documents",
-  icon: FileText
-}, {
   title: "Verzekeringsdocumenten",
   url: "/dashboard/insurance-documents", 
   icon: Shield
