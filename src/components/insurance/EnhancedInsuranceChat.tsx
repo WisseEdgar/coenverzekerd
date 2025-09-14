@@ -66,79 +66,35 @@ export function EnhancedInsuranceChat() {
     try {
       setIsLoading(true);
 
-      const functionName = useEnhancedPipeline ? 'enhanced-search' : 'search-insurance-enhanced';
-      
-      const requestBody = useEnhancedPipeline ? {
-        query: userQuery,
-        filters: searchFilters,
-        topN: 100,
-        mmrK: 24,
-        lambda: 0.7,
-        topK: 8,
-        tokenLimit: 2200,
-        useStitching: true,
-        useReranking: true
-      } : {
-        query: userQuery,
-        filters: searchFilters
-      };
-
-      console.log(`Using ${functionName} with body:`, requestBody);
-
-      const { data, error } = await supabase.functions.invoke(functionName, {
-        body: requestBody
+      // Call the external n8n webhook instead of internal functions
+      const response = await fetch('https://vsais.app.n8n.cloud/webhook/695450dc-3979-4987-9645-ba3fdf5170a7/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: userQuery,
+          filters: searchFilters
+        })
       });
 
-      if (error) {
-        throw new Error(error.message);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const { results, pipeline_stats } = data;
+      const data = await response.json();
       
-      // Set pipeline stats for enhanced pipeline
-      if (pipeline_stats) {
-        setPipelineStats(pipeline_stats);
+      // Update pipeline stats if provided by n8n
+      if (data.pipeline_stats) {
+        setPipelineStats(data.pipeline_stats);
       }
 
-      if (!results || results.length === 0) {
-        const noResultsMessage: Message = {
-          id: Date.now().toString(),
-          role: 'assistant',
-          content: 'Ik kon geen relevante informatie vinden in de beschikbare polisdocumenten. Kun je je vraag specifieker formuleren of andere zoektermen gebruiken?',
-          citations: [],
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, noResultsMessage]);
-        return;
-      }
-
-      // Generate AI response using chat-answer function
-      const { data: answerData, error: answerError } = await supabase.functions.invoke('chat-answer', {
-        body: {
-          query: userQuery,
-          filters: searchFilters,
-          userContext: null,
-          maxResults: results.length
-        }
-      });
-
-      if (answerError) {
-        throw new Error(answerError.message);
-      }
-
-      const citations: Citation[] = results.map((result: any) => ({
-        label: result.citation_label || `${result.insurer_name} ${result.product_name}`,
-        source_id: result.document_id,
-        page: result.page,
-        section_path: result.section_path,
-        confidence: result.similarity
-      }));
-
+      // Handle the response from n8n
       const assistantMessage: Message = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: answerData.answer || 'Er is een probleem opgetreden bij het genereren van het antwoord.',
-        citations,
+        content: data.answer || data.response || data.message || 'Er is een probleem opgetreden bij het genereren van het antwoord.',
+        citations: data.citations || [],
         timestamp: new Date()
       };
 
@@ -146,7 +102,7 @@ export function EnhancedInsuranceChat() {
 
       toast({
         title: "Antwoord gegenereerd",
-        description: `Gevonden ${citations.length} relevante bronnen`,
+        description: data.citations ? `Gevonden ${data.citations.length} relevante bronnen` : "Antwoord ontvangen van AI",
       });
 
     } catch (error) {
